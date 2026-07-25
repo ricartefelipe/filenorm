@@ -1,0 +1,75 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: filenorm
+      POSTGRES_USER: filenorm
+      POSTGRES_PASSWORD: filenorm
+    volumes:
+      - filenorm_free_pg:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U filenorm -d filenorm"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  mailpit:
+    image: axllent/mailpit:latest
+    ports:
+      - "18026:8025"
+
+  api:
+    build:
+      context: ./apps/api
+      dockerfile: Dockerfile.prebuilt
+    environment:
+      FILENORM_DB_URL: jdbc:postgresql://postgres:5432/filenorm
+      FILENORM_DB_USER: filenorm
+      FILENORM_DB_PASSWORD: filenorm
+      FILENORM_CORS_ORIGINS: http://localhost:9081
+      FILENORM_APP_BASE_URL: http://localhost:9081
+      FILENORM_API_BASE_URL: http://localhost:9081
+      FILENORM_EXPOSE_MAGIC_LINK: "true"
+      FILENORM_TRUST_FORWARDED_HOST: "true"
+      FILENORM_SMTP_HOST: mailpit
+      FILENORM_SMTP_PORT: "1025"
+      FILENORM_SMTP_AUTH: "false"
+      FILENORM_SMTP_STARTTLS: "false"
+      FILENORM_FROM_EMAIL: noreply@filenorm.local
+      FILENORM_STORAGE_PATH: /data/uploads
+    volumes:
+      - filenorm_free_uploads:/data/uploads
+    depends_on:
+      postgres:
+        condition: service_healthy
+      mailpit:
+        condition: service_started
+
+  web:
+    build:
+      context: ./apps/web
+      args:
+        NEXT_PUBLIC_API_BASE_URL: same-origin
+    depends_on:
+      - api
+
+  caddy:
+    image: caddy:2.9-alpine
+    ports:
+      - "9081:80"
+    volumes:
+      - ./deploy/Caddyfile.free:/etc/caddy/Caddyfile:ro
+    depends_on:
+      - api
+      - web
+
+  tunnel:
+    image: cloudflare/cloudflared:latest
+    command: tunnel --no-autoupdate --url http://caddy:80
+    depends_on:
+      - caddy
+    restart: unless-stopped
+
+volumes:
+  filenorm_free_pg:
+  filenorm_free_uploads:

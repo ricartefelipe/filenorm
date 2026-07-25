@@ -1,0 +1,78 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: ${FILENORM_DB_NAME:-filenorm}
+      POSTGRES_USER: ${FILENORM_DB_USER:-filenorm}
+      POSTGRES_PASSWORD: ${FILENORM_DB_PASSWORD:?set FILENORM_DB_PASSWORD}
+    volumes:
+      - filenorm_pg:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $$POSTGRES_USER -d $$POSTGRES_DB"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    restart: unless-stopped
+
+  api:
+    build:
+      context: ./apps/api
+    environment:
+      FILENORM_DB_URL: jdbc:postgresql://postgres:5432/${FILENORM_DB_NAME:-filenorm}
+      FILENORM_DB_USER: ${FILENORM_DB_USER:-filenorm}
+      FILENORM_DB_PASSWORD: ${FILENORM_DB_PASSWORD}
+      FILENORM_CORS_ORIGINS: https://${FILENORM_DOMAIN}
+      FILENORM_APP_BASE_URL: https://${FILENORM_DOMAIN}
+      FILENORM_API_BASE_URL: https://${FILENORM_DOMAIN}
+      FILENORM_EXPOSE_MAGIC_LINK: "false"
+      FILENORM_TRUST_FORWARDED_HOST: "true"
+      FILENORM_SMTP_HOST: ${FILENORM_SMTP_HOST}
+      FILENORM_SMTP_PORT: ${FILENORM_SMTP_PORT:-587}
+      FILENORM_SMTP_USER: ${FILENORM_SMTP_USER:-}
+      FILENORM_SMTP_PASSWORD: ${FILENORM_SMTP_PASSWORD:-}
+      FILENORM_SMTP_AUTH: ${FILENORM_SMTP_AUTH:-true}
+      FILENORM_SMTP_STARTTLS: ${FILENORM_SMTP_STARTTLS:-true}
+      FILENORM_FROM_EMAIL: ${FILENORM_FROM_EMAIL}
+      FILENORM_STORAGE_PATH: /data/uploads
+      STRIPE_API_KEY: ${STRIPE_API_KEY:-}
+      STRIPE_WEBHOOK_SECRET: ${STRIPE_WEBHOOK_SECRET:-}
+      STRIPE_STARTER_PRICE_ID: ${STRIPE_STARTER_PRICE_ID:-}
+      STRIPE_GROWTH_PRICE_ID: ${STRIPE_GROWTH_PRICE_ID:-}
+      STRIPE_SCALE_PRICE_ID: ${STRIPE_SCALE_PRICE_ID:-}
+    volumes:
+      - filenorm_uploads:/data/uploads
+    depends_on:
+      postgres:
+        condition: service_healthy
+    restart: unless-stopped
+
+  web:
+    build:
+      context: ./apps/web
+      args:
+        NEXT_PUBLIC_API_BASE_URL: same-origin
+    depends_on:
+      - api
+    restart: unless-stopped
+
+  caddy:
+    image: caddy:2.9-alpine
+    ports:
+      - "80:80"
+      - "443:443"
+    environment:
+      FILENORM_DOMAIN: ${FILENORM_DOMAIN}
+    volumes:
+      - ./deploy/Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    depends_on:
+      - api
+      - web
+    restart: unless-stopped
+
+volumes:
+  filenorm_pg:
+  filenorm_uploads:
+  caddy_data:
+  caddy_config:
