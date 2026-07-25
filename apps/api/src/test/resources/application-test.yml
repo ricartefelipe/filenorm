@@ -1,0 +1,46 @@
+spring:
+  main:
+    allow-bean-definition-overriding: true
+  datasource:
+    url: jdbc:postgresql://127.0.0.1:5433/filenorm
+    username: filenorm
+    password: filenorm
+  jpa:
+    hibernate:
+      ddl-auto: validate
+  mail:
+    host: localhost
+    port: 1025
+
+filenorm:
+  worker:
+    enabled: false
+    poll-interval-ms: 200
+    batch-size: 5
+  auth:
+    app-base-url: http://localhost:3000
+    api-base-url: http://localhost:8080
+    from-email: test@filenorm.local
+    magic-link-ttl-minutes: 20
+    session-ttl-days: 30
+    expose-magic-link: true
+    trust-forwarded-host: false
+  credits:
+    signup-grant: 500
+    ofx-cost: 1
+    csv-cost: 1
+    cnab-cost: 1
+    pdf-cost-per-page: 2
+    pdf-min-cost: 2
+  jobs:
+    max-upload-bytes: 10485760
+  storage:
+    path: ./target/test-uploads
+  billing:
+    stripe-api-key: ""
+    stripe-webhook-secret: ""
+    stripe-starter-price-id: ""
+    stripe-growth-price-id: ""
+    stripe-scale-price-id: ""
+  cors:
+    allowed-origins: http://localhost:3000

@@ -1,0 +1,25 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: filenorm
+      POSTGRES_USER: filenorm
+      POSTGRES_PASSWORD: filenorm
+    ports:
+      - "5434:5432"
+    volumes:
+      - filenorm_pg:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U filenorm -d filenorm"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  mailpit:
+    image: axllent/mailpit:latest
+    ports:
+      - "18026:8025"
+      - "11025:1025"
+
+volumes:
+  filenorm_pg:

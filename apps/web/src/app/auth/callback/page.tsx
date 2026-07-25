@@ -1,0 +1,73 @@
+"use client";
+
+import { Suspense, useEffect, useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
+import { getMe, verifyMagicLink } from "@/lib/api";
+import { saveSession, type AccountSession } from "@/lib/session";
+
+function CallbackInner() {
+  const router = useRouter();
+  const params = useSearchParams();
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    const sessionToken = params.get("sessionToken");
+    const token = params.get("token");
+
+    if (sessionToken) {
+      const session: AccountSession = {
+        accountId: "",
+        email: "",
+        sessionToken,
+      };
+      saveSession(session);
+      getMe(sessionToken)
+        .then((me) => {
+          saveSession({
+            accountId: me.accountId,
+            email: me.email,
+            name: me.name,
+            credits: me.credits,
+            sessionToken,
+          });
+          router.replace("/app");
+        })
+        .catch((err) => setError(err instanceof Error ? err.message : "falha_session"));
+      return;
+    }
+
+    if (!token) {
+      setError("token_ausente");
+      return;
+    }
+
+    verifyMagicLink(token)
+      .then((session) => {
+        saveSession(session);
+        router.replace("/app");
+      })
+      .catch((err) => setError(err instanceof Error ? err.message : "falha_verify"));
+  }, [params, router]);
+
+  return (
+    <section className="panel" style={{ maxWidth: 480 }}>
+      <h1 className="hero-title">Entrando...</h1>
+      {error ? <p className="error">{error}</p> : <p className="muted">Validando seu acesso.</p>}
+    </section>
+  );
+}
+
+export default function AuthCallbackPage() {
+  return (
+    <div className="app-shell">
+      <header className="topbar">
+        <div className="brand">
+          File<span>Norm</span>
+        </div>
+      </header>
+      <Suspense fallback={<section className="panel">Validando...</section>}>
+        <CallbackInner />
+      </Suspense>
+    </div>
+  );
+}

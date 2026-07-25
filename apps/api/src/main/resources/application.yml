@@ -1,0 +1,84 @@
+spring:
+  application:
+    name: filenorm-api
+  datasource:
+    url: ${FILENORM_DB_URL:jdbc:postgresql://localhost:5434/filenorm}
+    username: ${FILENORM_DB_USER:filenorm}
+    password: ${FILENORM_DB_PASSWORD:filenorm}
+  jpa:
+    open-in-view: false
+    hibernate:
+      ddl-auto: validate
+    properties:
+      hibernate:
+        jdbc:
+          time_zone: UTC
+  liquibase:
+    change-log: classpath:db/changelog/db.changelog-master.yaml
+  mail:
+    host: ${FILENORM_SMTP_HOST:localhost}
+    port: ${FILENORM_SMTP_PORT:11025}
+    username: ${FILENORM_SMTP_USER:}
+    password: ${FILENORM_SMTP_PASSWORD:}
+    properties:
+      mail:
+        smtp:
+          auth: ${FILENORM_SMTP_AUTH:false}
+          starttls:
+            enable: ${FILENORM_SMTP_STARTTLS:false}
+  servlet:
+    multipart:
+      max-file-size: 10MB
+      max-request-size: 10MB
+
+server:
+  port: ${FILENORM_PORT:8080}
+  forward-headers-strategy: framework
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,prometheus
+  endpoint:
+    health:
+      probes:
+        enabled: true
+
+filenorm:
+  worker:
+    enabled: ${FILENORM_WORKER_ENABLED:true}
+    poll-interval-ms: ${FILENORM_WORKER_POLL_MS:1000}
+    batch-size: ${FILENORM_WORKER_BATCH:10}
+  auth:
+    app-base-url: ${FILENORM_APP_BASE_URL:http://localhost:3000}
+    api-base-url: ${FILENORM_API_BASE_URL:http://localhost:8080}
+    from-email: ${FILENORM_FROM_EMAIL:noreply@filenorm.local}
+    magic-link-ttl-minutes: 20
+    session-ttl-days: 30
+    expose-magic-link: ${FILENORM_EXPOSE_MAGIC_LINK:false}
+    trust-forwarded-host: ${FILENORM_TRUST_FORWARDED_HOST:false}
+  credits:
+    signup-grant: 500
+    ofx-cost: 1
+    csv-cost: 1
+    cnab-cost: 1
+    pdf-cost-per-page: 2
+    pdf-min-cost: 2
+  jobs:
+    max-upload-bytes: 10485760
+  storage:
+    path: ${FILENORM_STORAGE_PATH:./data/uploads}
+  billing:
+    stripe-api-key: ${STRIPE_API_KEY:}
+    stripe-webhook-secret: ${STRIPE_WEBHOOK_SECRET:}
+    stripe-starter-price-id: ${STRIPE_STARTER_PRICE_ID:}
+    stripe-growth-price-id: ${STRIPE_GROWTH_PRICE_ID:}
+    stripe-scale-price-id: ${STRIPE_SCALE_PRICE_ID:}
+  cors:
+    allowed-origins: ${FILENORM_CORS_ORIGINS:http://localhost:3000}
+
+logging:
+  level:
+    root: INFO
+    br.com.ricarte.filenorm: INFO
