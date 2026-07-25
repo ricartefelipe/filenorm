@@ -1,0 +1,160 @@
+databaseChangeLog:
+  - changeSet:
+      id: 001-init
+      author: filenorm
+      changes:
+        - createTable:
+            tableName: accounts
+            columns:
+              - column: { name: id, type: uuid, constraints: { primaryKey: true, nullable: false } }
+              - column: { name: email, type: varchar(320), constraints: { nullable: false, unique: true } }
+              - column: { name: name, type: varchar(200) }
+              - column: { name: credits_balance, type: bigint, constraints: { nullable: false }, defaultValueNumeric: 0 }
+              - column: { name: created_at, type: timestamptz, constraints: { nullable: false } }
+
+        - createTable:
+            tableName: login_tokens
+            columns:
+              - column: { name: id, type: uuid, constraints: { primaryKey: true, nullable: false } }
+              - column: { name: account_id, type: uuid, constraints: { nullable: false } }
+              - column: { name: token_hash, type: varchar(128), constraints: { nullable: false, unique: true } }
+              - column: { name: expires_at, type: timestamptz, constraints: { nullable: false } }
+              - column: { name: created_at, type: timestamptz, constraints: { nullable: false } }
+        - addForeignKeyConstraint:
+            baseTableName: login_tokens
+            baseColumnNames: account_id
+            referencedTableName: accounts
+            referencedColumnNames: id
+            constraintName: fk_login_tokens_account
+
+        - createTable:
+            tableName: sessions
+            columns:
+              - column: { name: id, type: uuid, constraints: { primaryKey: true, nullable: false } }
+              - column: { name: account_id, type: uuid, constraints: { nullable: false } }
+              - column: { name: token_hash, type: varchar(128), constraints: { nullable: false, unique: true } }
+              - column: { name: expires_at, type: timestamptz, constraints: { nullable: false } }
+              - column: { name: created_at, type: timestamptz, constraints: { nullable: false } }
+        - addForeignKeyConstraint:
+            baseTableName: sessions
+            baseColumnNames: account_id
+            referencedTableName: accounts
+            referencedColumnNames: id
+            constraintName: fk_sessions_account
+        - createIndex:
+            tableName: sessions
+            indexName: idx_sessions_account
+            columns:
+              - column: { name: account_id }
+
+        - createTable:
+            tableName: api_keys
+            columns:
+              - column: { name: id, type: uuid, constraints: { primaryKey: true, nullable: false } }
+              - column: { name: account_id, type: uuid, constraints: { nullable: false } }
+              - column: { name: name, type: varchar(200), constraints: { nullable: false } }
+              - column: { name: key_prefix, type: varchar(20), constraints: { nullable: false } }
+              - column: { name: key_hash, type: varchar(128), constraints: { nullable: false, unique: true } }
+              - column: { name: revoked_at, type: timestamptz }
+              - column: { name: created_at, type: timestamptz, constraints: { nullable: false } }
+        - addForeignKeyConstraint:
+            baseTableName: api_keys
+            baseColumnNames: account_id
+            referencedTableName: accounts
+            referencedColumnNames: id
+            constraintName: fk_api_keys_account
+        - createIndex:
+            tableName: api_keys
+            indexName: idx_api_keys_account
+            columns:
+              - column: { name: account_id }
+
+        - createTable:
+            tableName: credit_ledger
+            columns:
+              - column: { name: id, type: uuid, constraints: { primaryKey: true, nullable: false } }
+              - column: { name: account_id, type: uuid, constraints: { nullable: false } }
+              - column: { name: delta, type: bigint, constraints: { nullable: false } }
+              - column: { name: reason, type: varchar(120), constraints: { nullable: false } }
+              - column: { name: job_id, type: uuid }
+              - column: { name: created_at, type: timestamptz, constraints: { nullable: false } }
+        - addForeignKeyConstraint:
+            baseTableName: credit_ledger
+            baseColumnNames: account_id
+            referencedTableName: accounts
+            referencedColumnNames: id
+            constraintName: fk_credit_ledger_account
+        - createIndex:
+            tableName: credit_ledger
+            indexName: idx_credit_ledger_account
+            columns:
+              - column: { name: account_id }
+              - column: { name: created_at }
+
+        - createTable:
+            tableName: jobs
+            columns:
+              - column: { name: id, type: uuid, constraints: { primaryKey: true, nullable: false } }
+              - column: { name: account_id, type: uuid, constraints: { nullable: false } }
+              - column: { name: status, type: varchar(40), constraints: { nullable: false } }
+              - column: { name: format, type: varchar(40), constraints: { nullable: false } }
+              - column: { name: preset, type: varchar(40) }
+              - column: { name: original_filename, type: varchar(500), constraints: { nullable: false } }
+              - column: { name: content_type, type: varchar(200) }
+              - column: { name: byte_size, type: bigint, constraints: { nullable: false } }
+              - column: { name: blob_path, type: varchar(1000), constraints: { nullable: false } }
+              - column: { name: error_code, type: varchar(80) }
+              - column: { name: error_message, type: varchar(1000) }
+              - column: { name: pages, type: int }
+              - column: { name: credits_charged, type: int, constraints: { nullable: false }, defaultValueNumeric: 0 }
+              - column: { name: created_at, type: timestamptz, constraints: { nullable: false } }
+              - column: { name: started_at, type: timestamptz }
+              - column: { name: finished_at, type: timestamptz }
+        - addForeignKeyConstraint:
+            baseTableName: jobs
+            baseColumnNames: account_id
+            referencedTableName: accounts
+            referencedColumnNames: id
+            constraintName: fk_jobs_account
+        - createIndex:
+            tableName: jobs
+            indexName: idx_jobs_status_created
+            columns:
+              - column: { name: status }
+              - column: { name: created_at }
+
+        - createTable:
+            tableName: normalized_events
+            columns:
+              - column: { name: id, type: uuid, constraints: { primaryKey: true, nullable: false } }
+              - column: { name: job_id, type: uuid, constraints: { nullable: false } }
+              - column: { name: external_id, type: varchar(500), constraints: { nullable: false } }
+              - column: { name: posted_at, type: date, constraints: { nullable: false } }
+              - column:
+                  name: amount
+                  type: numeric(18, 2)
+                  constraints:
+                    nullable: false
+              - column: { name: currency, type: varchar(3), constraints: { nullable: false } }
+              - column: { name: direction, type: varchar(10), constraints: { nullable: false } }
+              - column: { name: counterparty, type: varchar(500) }
+              - column: { name: description, type: text, constraints: { nullable: false } }
+              - column: { name: raw_ref, type: text }
+              - column:
+                  name: confidence
+                  type: numeric(4, 3)
+                  constraints:
+                    nullable: false
+              - column: { name: ordinal, type: int, constraints: { nullable: false } }
+        - addForeignKeyConstraint:
+            baseTableName: normalized_events
+            baseColumnNames: job_id
+            referencedTableName: jobs
+            referencedColumnNames: id
+            constraintName: fk_normalized_events_job
+        - createIndex:
+            tableName: normalized_events
+            indexName: idx_normalized_events_job
+            columns:
+              - column: { name: job_id }
+              - column: { name: ordinal }
