@@ -1,0 +1,16 @@
+.env
+.env.local
+*.log
+.DS_Store
+target/
+node_modules/
+.next/
+dist/
+*.jar
+.idea/
+*.iml
+.vscode/
+coverage/
+tmp/
+uploads/
+data/
