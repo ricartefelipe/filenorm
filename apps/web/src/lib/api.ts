@@ -45,6 +45,39 @@ export type JobSummary = {
   finishedAt?: string | null;
 };
 
+type UsageApiResponse = {
+  credits?: number;
+  creditsBalance?: number;
+  creditsUsed?: number;
+  jobsTotal?: number;
+  jobsSucceeded?: number;
+  jobsFailed?: number;
+  stripeConfigured?: boolean;
+  recentLedger?: Array<{ delta?: number }>;
+};
+
+type ApiKeyApiResponse = {
+  id: string;
+  prefix?: string;
+  keyPrefix?: string;
+  name?: string | null;
+  createdAt: string;
+  lastUsedAt?: string | null;
+  apiKey?: string;
+  key?: string;
+};
+
+type JobApiResponse = {
+  id: string;
+  status: string;
+  format?: string;
+  fileName?: string;
+  originalFilename?: string;
+  creditsCharged?: number;
+  createdAt: string;
+  finishedAt?: string | null;
+};
+
 function authHeaders(sessionToken: string): HeadersInit {
   return {
     "Content-Type": "application/json",
@@ -60,6 +93,52 @@ async function parse<T>(response: Response): Promise<T> {
     throw new Error(error);
   }
   return data as T;
+}
+
+function mapUsage(data: UsageApiResponse): UsageInfo {
+  const credits = data.credits ?? data.creditsBalance ?? 0;
+  const creditsUsed =
+    data.creditsUsed ??
+    (data.recentLedger ?? [])
+      .filter((entry) => typeof entry.delta === "number" && entry.delta < 0)
+      .reduce((sum, entry) => sum + Math.abs(entry.delta ?? 0), 0);
+  return {
+    credits,
+    creditsUsed,
+    jobsTotal: data.jobsTotal,
+    jobsSucceeded: data.jobsSucceeded,
+    jobsFailed: data.jobsFailed,
+    stripeConfigured: data.stripeConfigured,
+  };
+}
+
+function mapApiKey(data: ApiKeyApiResponse): ApiKeySummary {
+  return {
+    id: data.id,
+    prefix: data.prefix ?? data.keyPrefix ?? "",
+    name: data.name,
+    createdAt: data.createdAt,
+    lastUsedAt: data.lastUsedAt,
+  };
+}
+
+function mapApiKeyCreated(data: ApiKeyApiResponse): ApiKeyCreated {
+  return {
+    ...mapApiKey(data),
+    key: data.key ?? data.apiKey ?? "",
+  };
+}
+
+function mapJob(data: JobApiResponse): JobSummary {
+  return {
+    id: data.id,
+    status: data.status,
+    format: data.format,
+    fileName: data.fileName ?? data.originalFilename,
+    creditsCharged: data.creditsCharged,
+    createdAt: data.createdAt,
+    finishedAt: data.finishedAt,
+  };
 }
 
 export async function requestMagicLink(
@@ -80,7 +159,14 @@ export async function verifyMagicLink(token: string): Promise<AccountSession> {
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ token }),
   });
-  return parse<AccountSession>(response);
+  const data = await parse<AccountSession & { creditsBalance?: number }>(response);
+  return {
+    accountId: data.accountId,
+    email: data.email,
+    name: data.name,
+    credits: data.credits ?? data.creditsBalance,
+    sessionToken: data.sessionToken,
+  };
 }
 
 export async function getMe(sessionToken: string): Promise<AccountSession> {
@@ -88,7 +174,14 @@ export async function getMe(sessionToken: string): Promise<AccountSession> {
     headers: authHeaders(sessionToken),
     cache: "no-store",
   });
-  return parse<AccountSession>(response);
+  const data = await parse<AccountSession & { creditsBalance?: number }>(response);
+  return {
+    accountId: data.accountId,
+    email: data.email,
+    name: data.name,
+    credits: data.credits ?? data.creditsBalance,
+    sessionToken,
+  };
 }
 
 export async function listApiKeys(sessionToken: string): Promise<ApiKeySummary[]> {
@@ -96,7 +189,8 @@ export async function listApiKeys(sessionToken: string): Promise<ApiKeySummary[]
     headers: authHeaders(sessionToken),
     cache: "no-store",
   });
-  return parse<ApiKeySummary[]>(response);
+  const data = await parse<ApiKeyApiResponse[]>(response);
+  return data.map(mapApiKey);
 }
 
 export async function createApiKey(
@@ -108,7 +202,7 @@ export async function createApiKey(
     headers: authHeaders(sessionToken),
     body: JSON.stringify(name ? { name } : {}),
   });
-  return parse<ApiKeyCreated>(response);
+  return mapApiKeyCreated(await parse<ApiKeyApiResponse>(response));
 }
 
 export async function revokeApiKey(sessionToken: string, id: string): Promise<void> {
@@ -124,7 +218,7 @@ export async function getUsage(sessionToken: string): Promise<UsageInfo> {
     headers: authHeaders(sessionToken),
     cache: "no-store",
   });
-  return parse<UsageInfo>(response);
+  return mapUsage(await parse<UsageApiResponse>(response));
 }
 
 export async function listJobs(sessionToken: string): Promise<JobSummary[] | null> {
@@ -135,7 +229,8 @@ export async function listJobs(sessionToken: string): Promise<JobSummary[] | nul
   if (response.status === 404) {
     return null;
   }
-  return parse<JobSummary[]>(response);
+  const data = await parse<JobApiResponse[]>(response);
+  return data.map(mapJob);
 }
 
 export async function startCheckout(
