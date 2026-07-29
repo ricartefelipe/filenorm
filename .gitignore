@@ -14,3 +14,7 @@ coverage/
 tmp/
 uploads/
 data/
+.cursor/
+.superpowers/
+AGENTS.md
+PROMPT-EVOLUCAO.md
