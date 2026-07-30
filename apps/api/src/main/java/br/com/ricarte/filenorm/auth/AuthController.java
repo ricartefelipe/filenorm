@@ -44,6 +44,11 @@ public class AuthController {
         return authService.verifyMagicLink(request.token());
     }
 
+    @PostMapping("/password")
+    public Map<String, Object> password(@Valid @RequestBody PasswordRequest request) {
+        return authService.loginWithPassword(request.email(), request.password());
+    }
+
     @GetMapping("/verify")
     public Map<String, Object> verifyGet(@RequestParam String token) {
         return authService.verifyMagicLink(token);
@@ -75,5 +80,8 @@ public class AuthController {
     }
 
     public record VerifyRequest(@NotBlank String token) {
+    }
+
+    public record PasswordRequest(@NotBlank @Email String email, @NotBlank String password) {
     }
 }

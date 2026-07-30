@@ -2,13 +2,14 @@
 
 import { FormEvent, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { requestMagicLink } from "@/lib/api";
-import { loadSession } from "@/lib/session";
+import { loginWithPassword, requestMagicLink } from "@/lib/api";
+import { loadSession, saveSession } from "@/lib/session";
 
 export default function HomePage() {
   const router = useRouter();
   const [email, setEmail] = useState("");
   const [name, setName] = useState("");
+  const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [sent, setSent] = useState(false);
@@ -20,7 +21,7 @@ export default function HomePage() {
     }
   }, [router]);
 
-  async function onSubmit(event: FormEvent) {
+  async function onMagicLink(event: FormEvent) {
     event.preventDefault();
     setLoading(true);
     setError(null);
@@ -54,8 +55,28 @@ export default function HomePage() {
 
         <section className="panel">
           <h2 className="hero-title">Entrar</h2>
-          <p className="muted">Informe e-mail e nome para receber um link de acesso.</p>
-          <form onSubmit={onSubmit} style={{ marginTop: "1.25rem" }}>
+          <p className="muted">E-mail/senha TotalRecall ou link mágico.</p>
+          <form
+            onSubmit={async (event) => {
+              event.preventDefault();
+              if (!password.trim()) {
+                await onMagicLink(event);
+                return;
+              }
+              setLoading(true);
+              setError(null);
+              try {
+                const session = await loginWithPassword(email.trim(), password);
+                saveSession(session);
+                router.replace("/app");
+              } catch (err) {
+                setError(err instanceof Error ? err.message : "falha_no_login");
+              } finally {
+                setLoading(false);
+              }
+            }}
+            style={{ marginTop: "1.25rem" }}
+          >
             <div className="field">
               <label htmlFor="email">E-mail</label>
               <input
@@ -68,17 +89,27 @@ export default function HomePage() {
               />
             </div>
             <div className="field">
+              <label htmlFor="password">Senha TotalRecall (opcional)</label>
+              <input
+                id="password"
+                type="password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                placeholder="trp_…"
+                autoComplete="current-password"
+              />
+            </div>
+            <div className="field">
               <label htmlFor="name">Nome</label>
               <input
                 id="name"
-                required
                 value={name}
                 onChange={(e) => setName(e.target.value)}
-                placeholder="Seu nome"
+                placeholder="Para magic link"
               />
             </div>
             <button className="button" type="submit" disabled={loading}>
-              {loading ? "Enviando..." : "Enviar link de acesso"}
+              {loading ? "Entrando..." : password ? "Entrar com senha" : "Enviar link de acesso"}
             </button>
             {sent ? (
               <p className="muted" style={{ marginTop: "0.9rem" }}>
