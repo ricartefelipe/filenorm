@@ -60,7 +60,7 @@ filenorm:
     trust-forwarded-host: ${FILENORM_TRUST_FORWARDED_HOST:false}
   totalrecall:
     enabled: ${TOTALRECALL_ENABLED:true}
-    base-url: ${TOTALRECALL_BASE_URL:http://54.94.163.136:9087}
+    base-url: ${TOTALRECALL_BASE_URL:https://54.94.163.136.sslip.io}
     system-slug: ${TOTALRECALL_SYSTEM_SLUG:filenorm}
   credits:
     signup-grant: 500

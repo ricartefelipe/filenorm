@@ -5,6 +5,21 @@ import { useRouter } from "next/navigation";
 import { loginWithPassword, requestMagicLink } from "@/lib/api";
 import { loadSession, saveSession } from "@/lib/session";
 
+function authErrorMessage(error: unknown, fallback: string): string {
+  if (!(error instanceof Error)) {
+    return fallback;
+  }
+
+  switch (error.message) {
+    case "invalid_credentials":
+      return "E-mail ou senha do TotalRecall inválidos. Gere uma senha para o sistema FileNorm no TotalRecall e tente novamente.";
+    case "falha_ao_enviar":
+      return "Não foi possível enviar o link de acesso. Tente novamente.";
+    default:
+      return fallback;
+  }
+}
+
 export default function HomePage() {
   const router = useRouter();
   const [email, setEmail] = useState("");
@@ -34,7 +49,7 @@ export default function HomePage() {
         setDevLink(result.magicLink);
       }
     } catch (err) {
-      setError(err instanceof Error ? err.message : "falha_ao_enviar");
+      setError(authErrorMessage(err, "Não foi possível enviar o link de acesso. Tente novamente."));
     } finally {
       setLoading(false);
     }
@@ -70,7 +85,7 @@ export default function HomePage() {
                 saveSession(session);
                 router.replace("/app");
               } catch (err) {
-                setError(err instanceof Error ? err.message : "falha_no_login");
+                setError(authErrorMessage(err, "Não foi possível entrar. Tente novamente."));
               } finally {
                 setLoading(false);
               }
@@ -86,6 +101,7 @@ export default function HomePage() {
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 placeholder="voce@empresa.com"
+                autoComplete="email"
               />
             </div>
             <div className="field">
@@ -106,6 +122,7 @@ export default function HomePage() {
                 value={name}
                 onChange={(e) => setName(e.target.value)}
                 placeholder="Para magic link"
+                autoComplete="off"
               />
             </div>
             <button className="button" type="submit" disabled={loading}>
