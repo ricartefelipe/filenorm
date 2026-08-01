@@ -20,6 +20,7 @@ import java.util.UUID;
 import org.springframework.http.HttpStatus;
 import org.springframework.mail.SimpleMailMessage;
 import org.springframework.mail.javamail.JavaMailSender;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -32,6 +33,7 @@ public class AuthService {
     private final CreditsService creditsService;
     private final FilenormProperties properties;
     private final JavaMailSender mailSender;
+    private final PasswordEncoder passwordEncoder;
     private final SecureRandom secureRandom = new SecureRandom();
 
     public AuthService(
@@ -40,7 +42,8 @@ public class AuthService {
             SessionRepository sessionRepository,
             CreditsService creditsService,
             FilenormProperties properties,
-            JavaMailSender mailSender
+            JavaMailSender mailSender,
+            PasswordEncoder passwordEncoder
     ) {
         this.accountRepository = accountRepository;
         this.loginTokenRepository = loginTokenRepository;
@@ -48,6 +51,7 @@ public class AuthService {
         this.creditsService = creditsService;
         this.properties = properties;
         this.mailSender = mailSender;
+        this.passwordEncoder = passwordEncoder;
     }
 
     @Transactional
@@ -111,7 +115,45 @@ public class AuthService {
     }
 
     @Transactional
+    public Map<String, Object> loginWithPassword(String email, String password) {
+        Account account = accountRepository.findByEmail(email)
+                .orElseThrow(() -> new ApiException(HttpStatus.UNAUTHORIZED, "invalid_credentials"));
+        if (!accountActive(account) || account.getPasswordHash() == null
+                || !passwordEncoder.matches(password, account.getPasswordHash())) {
+            throw new ApiException(HttpStatus.UNAUTHORIZED, "invalid_credentials");
+        }
+        return createSessionForAccount(account);
+    }
+
+    @Transactional
+    public Account provision(String email, String name, String password, Instant expiresAt, String action) {
+        Account account = accountRepository.findByEmail(email)
+                .orElseGet(() -> ensureAccount(email, name == null || name.isBlank() ? email : name));
+        if ("disable".equals(action)) {
+            account.setEnabled(false);
+            sessionRepository.deleteByAccountId(account.getId());
+            return accountRepository.save(account);
+        }
+        if ("revoke".equals(action)) {
+            sessionRepository.deleteByAccountId(account.getId());
+            return account;
+        }
+        if (name != null && !name.isBlank()) {
+            account.setName(name);
+        }
+        if (password != null && !password.isBlank()) {
+            account.setPasswordHash(passwordEncoder.encode(password));
+        }
+        account.setEnabled(true);
+        account.setExpiresAt(expiresAt);
+        return accountRepository.save(account);
+    }
+
+    @Transactional
     public Map<String, Object> createSessionForAccount(Account account) {
+        if (!accountActive(account)) {
+            throw new ApiException(HttpStatus.UNAUTHORIZED, "account_unavailable");
+        }
         Instant now = Instant.now();
         String sessionRaw = randomToken(32);
         Session session = new Session(
@@ -132,7 +174,9 @@ public class AuthService {
         }
         return sessionRepository.findByTokenHash(TokenHasher.sha256(sessionRaw))
                 .filter(session -> session.active(Instant.now()))
-                .map(Session::getAccountId);
+                .map(Session::getAccountId)
+                .filter(accountRepository::existsById)
+                .filter(accountId -> accountRepository.findById(accountId).map(this::accountActive).orElse(false));
     }
 
     @Transactional
@@ -172,5 +216,9 @@ public class AuthService {
         byte[] buffer = new byte[bytes];
         secureRandom.nextBytes(buffer);
         return HexFormat.of().formatHex(buffer);
+    }
+
+    private boolean accountActive(Account account) {
+        return account.isEnabled() && (account.getExpiresAt() == null || account.getExpiresAt().isAfter(Instant.now()));
     }
 }
