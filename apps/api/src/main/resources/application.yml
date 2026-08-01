@@ -77,6 +77,8 @@ filenorm:
     stripe-scale-price-id: ${STRIPE_SCALE_PRICE_ID:}
   cors:
     allowed-origins: ${FILENORM_CORS_ORIGINS:http://localhost:3000}
+  totalrecall:
+    provision-token: ${TOTALRECALL_PROVISION_TOKEN:}
 
 logging:
   level:

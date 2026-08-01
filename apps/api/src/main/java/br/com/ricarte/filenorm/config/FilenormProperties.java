@@ -10,7 +10,8 @@ public record FilenormProperties(
         Jobs jobs,
         Storage storage,
         Billing billing,
-        Cors cors
+        Cors cors,
+        Totalrecall totalrecall
 ) {
     public record Worker(boolean enabled, long pollIntervalMs, int batchSize) {
     }
@@ -52,5 +53,8 @@ public record FilenormProperties(
     }
 
     public record Cors(String allowedOrigins) {
+    }
+
+    public record Totalrecall(String provisionToken) {
     }
 }
