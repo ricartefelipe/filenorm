@@ -11,8 +11,6 @@ function authErrorMessage(error: unknown, fallback: string): string {
   }
 
   switch (error.message) {
-    case "invalid_credentials":
-      return "E-mail ou senha do TotalRecall inválidos. Gere uma senha para o sistema FileNorm no TotalRecall e tente novamente.";
     case "falha_ao_enviar":
       return "Não foi possível enviar o link de acesso. Tente novamente.";
     default:
@@ -55,6 +53,20 @@ export default function HomePage() {
     }
   }
 
+  async function onPassword(event: FormEvent) {
+    event.preventDefault();
+    setLoading(true);
+    setError(null);
+    try {
+      saveSession(await loginWithPassword(email.trim(), password));
+      router.replace("/app");
+    } catch (err) {
+      setError(authErrorMessage(err, "E-mail ou senha inválidos."));
+    } finally {
+      setLoading(false);
+    }
+  }
+
   return (
     <div className="app-shell">
       <div className="login-layout">
@@ -70,28 +82,8 @@ export default function HomePage() {
 
         <section className="panel">
           <h2 className="hero-title">Entrar</h2>
-          <p className="muted">E-mail/senha TotalRecall ou link mágico.</p>
-          <form
-            onSubmit={async (event) => {
-              event.preventDefault();
-              if (!password.trim()) {
-                await onMagicLink(event);
-                return;
-              }
-              setLoading(true);
-              setError(null);
-              try {
-                const session = await loginWithPassword(email.trim(), password);
-                saveSession(session);
-                router.replace("/app");
-              } catch (err) {
-                setError(authErrorMessage(err, "Não foi possível entrar. Tente novamente."));
-              } finally {
-                setLoading(false);
-              }
-            }}
-            style={{ marginTop: "1.25rem" }}
-          >
+          <p className="muted">Receba um link mágico no e-mail para acessar.</p>
+          <form onSubmit={onMagicLink} style={{ marginTop: "1.25rem" }}>
             <div className="field">
               <label htmlFor="email">E-mail</label>
               <input
@@ -105,17 +97,6 @@ export default function HomePage() {
               />
             </div>
             <div className="field">
-              <label htmlFor="password">Senha TotalRecall (opcional)</label>
-              <input
-                id="password"
-                type="password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                placeholder="trp_…"
-                autoComplete="current-password"
-              />
-            </div>
-            <div className="field">
               <label htmlFor="name">Nome</label>
               <input
                 id="name"
@@ -126,7 +107,7 @@ export default function HomePage() {
               />
             </div>
             <button className="button" type="submit" disabled={loading}>
-              {loading ? "Entrando..." : password ? "Entrar com senha" : "Enviar link de acesso"}
+              {loading ? "Enviando..." : "Enviar link de acesso"}
             </button>
             {sent ? (
               <p className="muted" style={{ marginTop: "0.9rem" }}>
@@ -139,6 +120,22 @@ export default function HomePage() {
               </div>
             ) : null}
             {error ? <p className="error">{error}</p> : null}
+          </form>
+          <form onSubmit={onPassword} style={{ marginTop: "1.25rem" }}>
+            <div className="field">
+              <label htmlFor="password">Senha</label>
+              <input
+                id="password"
+                type="password"
+                required
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                autoComplete="current-password"
+              />
+            </div>
+            <button className="button" type="submit" disabled={loading}>
+              {loading ? "Entrando..." : "Entrar com senha"}
+            </button>
           </form>
         </section>
       </div>
