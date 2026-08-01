@@ -11,9 +11,12 @@ class TotalRecallProductionConfigurationTest {
 
     @Test
     void configuresThePublicTotalRecallEndpointForPasswordLogin() throws IOException {
-        String compose = Files.readString(Path.of("..", "..", "docker-compose.prod.yml"));
+        String productionCompose = Files.readString(Path.of("..", "..", "docker-compose.prod.yml"));
+        String freeCompose = Files.readString(Path.of("..", "..", "docker-compose.free.yml"));
 
-        assertThat(compose).contains("TOTALRECALL_BASE_URL: ${TOTALRECALL_BASE_URL:-https://54.94.163.136.sslip.io}");
-        assertThat(compose).contains("TOTALRECALL_SYSTEM_SLUG: ${TOTALRECALL_SYSTEM_SLUG:-filenorm}");
+        assertThat(productionCompose).contains("TOTALRECALL_BASE_URL: ${TOTALRECALL_BASE_URL:-https://54.94.163.136.sslip.io}");
+        assertThat(productionCompose).contains("TOTALRECALL_SYSTEM_SLUG: ${TOTALRECALL_SYSTEM_SLUG:-filenorm}");
+        assertThat(freeCompose).contains("TOTALRECALL_BASE_URL: ${TOTALRECALL_BASE_URL:-https://54.94.163.136.sslip.io}");
+        assertThat(freeCompose).contains("TOTALRECALL_SYSTEM_SLUG: ${TOTALRECALL_SYSTEM_SLUG:-filenorm}");
     }
 }
