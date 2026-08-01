@@ -32,7 +32,6 @@ public class AuthService {
     private final CreditsService creditsService;
     private final FilenormProperties properties;
     private final JavaMailSender mailSender;
-    private final TotalRecallClient totalRecallClient;
     private final SecureRandom secureRandom = new SecureRandom();
 
     public AuthService(
@@ -41,8 +40,7 @@ public class AuthService {
             SessionRepository sessionRepository,
             CreditsService creditsService,
             FilenormProperties properties,
-            JavaMailSender mailSender,
-            TotalRecallClient totalRecallClient
+            JavaMailSender mailSender
     ) {
         this.accountRepository = accountRepository;
         this.loginTokenRepository = loginTokenRepository;
@@ -50,7 +48,6 @@ public class AuthService {
         this.creditsService = creditsService;
         this.properties = properties;
         this.mailSender = mailSender;
-        this.totalRecallClient = totalRecallClient;
     }
 
     @Transactional
@@ -100,44 +97,17 @@ public class AuthService {
 
     @Transactional
     public Map<String, Object> verifyMagicLink(String rawToken) {
-        Optional<LoginToken> local = loginTokenRepository.findByTokenHash(TokenHasher.sha256(rawToken));
-        if (local.isPresent()) {
-            LoginToken loginToken = local.get();
-            Instant now = Instant.now();
-            if (loginToken.getExpiresAt().isBefore(now)) {
-                throw new ApiException(HttpStatus.UNAUTHORIZED, "invalid_token");
-            }
-            loginTokenRepository.delete(loginToken);
-
-            Account account = accountRepository.findById(loginToken.getAccountId())
-                    .orElseThrow(() -> new ApiException(HttpStatus.UNAUTHORIZED, "invalid_token"));
-            return createSessionForAccount(account);
-        }
-
-        Map<String, Object> tr = totalRecallClient.validateToken(rawToken);
-        if (!Boolean.TRUE.equals(tr.get("valid"))) {
+        LoginToken loginToken = loginTokenRepository.findByTokenHash(TokenHasher.sha256(rawToken))
+                .orElseThrow(() -> new ApiException(HttpStatus.UNAUTHORIZED, "invalid_token"));
+        Instant now = Instant.now();
+        if (loginToken.getExpiresAt().isBefore(now)) {
             throw new ApiException(HttpStatus.UNAUTHORIZED, "invalid_token");
         }
-        @SuppressWarnings("unchecked")
-        Map<String, Object> profile = (Map<String, Object>) tr.get("profile");
-        String email = profile == null ? null : String.valueOf(profile.get("email"));
-        String name = profile == null ? email : String.valueOf(profile.getOrDefault("name", email));
-        if (email == null || email.isBlank() || "null".equals(email)) {
-            throw new ApiException(HttpStatus.UNAUTHORIZED, "invalid_token");
-        }
-        return createSessionForAccount(ensureAccount(email, name));
-    }
+        loginTokenRepository.delete(loginToken);
 
-    @Transactional
-    public Map<String, Object> loginWithPassword(String email, String password) {
-        Map<String, Object> tr = totalRecallClient.login(email, password);
-        if (!Boolean.TRUE.equals(tr.get("valid"))) {
-            throw new ApiException(HttpStatus.UNAUTHORIZED, "invalid_credentials");
-        }
-        @SuppressWarnings("unchecked")
-        Map<String, Object> profile = (Map<String, Object>) tr.get("profile");
-        String name = profile == null ? email : String.valueOf(profile.getOrDefault("name", email));
-        return createSessionForAccount(ensureAccount(email, name));
+        Account account = accountRepository.findById(loginToken.getAccountId())
+                .orElseThrow(() -> new ApiException(HttpStatus.UNAUTHORIZED, "invalid_token"));
+        return createSessionForAccount(account);
     }
 
     @Transactional

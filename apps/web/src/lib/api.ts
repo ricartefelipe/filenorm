@@ -169,24 +169,6 @@ export async function verifyMagicLink(token: string): Promise<AccountSession> {
   };
 }
 
-export async function loginWithPassword(
-  email: string,
-  password: string
-): Promise<AccountSession> {
-  const response = await fetch(`${resolveApiBase()}/v1/auth/password`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ email, password }),
-  });
-  const data = await parse<AccountSession & { creditsBalance?: number }>(response);
-  return {
-    accountId: data.accountId,
-    email: data.email,
-    name: data.name,
-    credits: data.credits ?? data.creditsBalance,
-    sessionToken: data.sessionToken,
-  };
-}
 
 export async function getMe(sessionToken: string): Promise<AccountSession> {
   const response = await fetch(`${resolveApiBase()}/v1/auth/me`, {

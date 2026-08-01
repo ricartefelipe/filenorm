@@ -58,10 +58,6 @@ filenorm:
     session-ttl-days: 30
     expose-magic-link: ${FILENORM_EXPOSE_MAGIC_LINK:false}
     trust-forwarded-host: ${FILENORM_TRUST_FORWARDED_HOST:false}
-  totalrecall:
-    enabled: ${TOTALRECALL_ENABLED:true}
-    base-url: ${TOTALRECALL_BASE_URL:https://54.94.163.136.sslip.io}
-    system-slug: ${TOTALRECALL_SYSTEM_SLUG:filenorm}
   credits:
     signup-grant: 500
     ofx-cost: 1
