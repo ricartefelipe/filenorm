@@ -22,7 +22,7 @@ public class TotalRecallClient {
     private final String systemSlug;
 
     public TotalRecallClient(
-            @Value("${filenorm.totalrecall.base-url:http://54.94.163.136:9087}") String baseUrl,
+            @Value("${filenorm.totalrecall.base-url:https://54.94.163.136.sslip.io}") String baseUrl,
             @Value("${filenorm.totalrecall.enabled:true}") boolean enabled,
             @Value("${filenorm.totalrecall.system-slug:filenorm}") String systemSlug
     ) {
