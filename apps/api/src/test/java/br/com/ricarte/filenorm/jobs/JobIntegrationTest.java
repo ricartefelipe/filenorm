@@ -66,6 +66,9 @@ class JobIntegrationTest extends PostgresIntegrationTest {
     @Autowired
     private FilenormProperties properties;
 
+    @Autowired
+    private JobRetention jobRetention;
+
     private TestAccount account;
 
     @BeforeEach
@@ -290,6 +293,25 @@ class JobIntegrationTest extends PostgresIntegrationTest {
         assertThat(Files.exists(blob)).isFalse();
         assertThat(jdbc.queryForObject("SELECT count(*) FROM credit_ledger WHERE job_id = ?", Long.class, job.getId()))
                 .as("ledger mantido para auditoria").isEqualTo(1);
+    }
+
+    @Test
+    void orphanUploadFilesAreRemovedButFilesOfExistingJobsStay() throws Exception {
+        String jobId = upload(account, "sample.ofx", "ofx", null);
+        Job job = jobRepository.findById(UUID.fromString(jobId)).orElseThrow();
+        Path root = Path.of(properties.storage().path()).toAbsolutePath();
+        Path kept = root.resolve(job.getBlobPath());
+        Path orphan = root.resolve(account.accountId() + "/" + UUID.randomUUID() + "/abandonado.ofx");
+        Files.createDirectories(orphan.getParent());
+        Files.writeString(orphan, "x");
+        java.nio.file.attribute.FileTime old = java.nio.file.attribute.FileTime.from(java.time.Instant.now().minusSeconds(7200));
+        Files.setLastModifiedTime(orphan, old);
+        Files.setLastModifiedTime(kept, old);
+
+        jobRetention.removeOrphanBlobs(java.time.Instant.now().minusSeconds(3600));
+
+        assertThat(Files.exists(orphan)).isFalse();
+        assertThat(Files.exists(kept)).isTrue();
     }
 
     @Test

@@ -1,6 +1,6 @@
 services:
   postgres:
-    image: postgres:16-alpine
+    image: postgres:16-alpine@sha256:0cefaabd882e42bcb2a2f3dc56d3ce4770560ba62fd7f197f1a2e008fd5731ab
     environment:
       POSTGRES_DB: ${FILENORM_DB_NAME:-filenorm}
       POSTGRES_USER: ${FILENORM_DB_USER:-filenorm}
@@ -16,7 +16,7 @@ services:
 
   # Volumes criados por versões que rodavam como root: ajusta o dono para o usuário da API (uid 10001).
   uploads-permissions:
-    image: postgres:16-alpine
+    image: postgres:16-alpine@sha256:0cefaabd882e42bcb2a2f3dc56d3ce4770560ba62fd7f197f1a2e008fd5731ab
     user: "0"
     entrypoint: ["chown", "-R", "10001", "/data/uploads"]
     volumes:
@@ -67,7 +67,7 @@ services:
     restart: unless-stopped
 
   caddy:
-    image: caddy:2.9-alpine
+    image: caddy:2.9-alpine@sha256:b4e3952384eb9524a887633ce65c752dd7c71314d2c2acf98cd5c715aaa534f0
     ports:
       - "80:80"
       - "443:443"

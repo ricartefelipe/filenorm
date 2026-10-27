@@ -1,6 +1,6 @@
 services:
   postgres:
-    image: postgres:16-alpine
+    image: postgres:16-alpine@sha256:0cefaabd882e42bcb2a2f3dc56d3ce4770560ba62fd7f197f1a2e008fd5731ab
     environment:
       POSTGRES_DB: filenorm
       POSTGRES_USER: filenorm
@@ -14,13 +14,13 @@ services:
       retries: 10
 
   mailpit:
-    image: axllent/mailpit:latest
+    image: axllent/mailpit:latest@sha256:0790692be935ea4420d085694f7985b1f692ca6a8771ab0e0bd8ba75ac180498
     ports:
       - "18026:8025"
 
   # Volumes criados por versões que rodavam como root: ajusta o dono para o usuário da API (uid 10001).
   uploads-permissions:
-    image: postgres:16-alpine
+    image: postgres:16-alpine@sha256:0cefaabd882e42bcb2a2f3dc56d3ce4770560ba62fd7f197f1a2e008fd5731ab
     user: "0"
     entrypoint: ["chown", "-R", "10001", "/data/uploads"]
     volumes:
@@ -39,6 +39,9 @@ services:
       FILENORM_APP_BASE_URL: http://localhost:9081
       FILENORM_API_BASE_URL: http://localhost:9081
       FILENORM_EXPOSE_MAGIC_LINK: "true"
+      # Sem este código o link de login não aparece na tela (a demo fica num túnel público).
+      # Vazio = o link nunca aparece; ./scripts/free-demo.sh gera e imprime o código.
+      FILENORM_DEMO_ACCESS_CODE: ${FILENORM_DEMO_ACCESS_CODE:-}
       FILENORM_TRUST_FORWARDED_HOST: "true"
       FILENORM_SMTP_HOST: mailpit
       FILENORM_SMTP_PORT: "1025"
@@ -65,7 +68,7 @@ services:
       - api
 
   caddy:
-    image: caddy:2.9-alpine
+    image: caddy:2.9-alpine@sha256:b4e3952384eb9524a887633ce65c752dd7c71314d2c2acf98cd5c715aaa534f0
     ports:
       - "9081:80"
     volumes:
@@ -75,7 +78,7 @@ services:
       - web
 
   tunnel:
-    image: cloudflare/cloudflared:latest
+    image: cloudflare/cloudflared:latest@sha256:c6c7ae1d5dfdcb094ad344ed68ccffc26635c9c6be80965664c33baf064b0515
     command: tunnel --no-autoupdate --url http://caddy:80
     depends_on:
       - caddy

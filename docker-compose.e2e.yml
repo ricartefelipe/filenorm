@@ -1,0 +1,57 @@
+# Ambiente descartável para scripts/smoke-e2e.sh (projetos filenorm-e2e e filenorm-e2e-restore).
+# Credenciais sintéticas; nada aqui serve para produção.
+services:
+  postgres:
+    image: postgres:16-alpine@sha256:0cefaabd882e42bcb2a2f3dc56d3ce4770560ba62fd7f197f1a2e008fd5731ab
+    environment:
+      POSTGRES_DB: filenorm
+      POSTGRES_USER: filenorm
+      POSTGRES_PASSWORD: e2e-only
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U filenorm -d filenorm"]
+      interval: 2s
+      timeout: 3s
+      retries: 30
+
+  mailpit:
+    image: axllent/mailpit:latest@sha256:0790692be935ea4420d085694f7985b1f692ca6a8771ab0e0bd8ba75ac180498
+
+  uploads-permissions:
+    image: postgres:16-alpine@sha256:0cefaabd882e42bcb2a2f3dc56d3ce4770560ba62fd7f197f1a2e008fd5731ab
+    user: "0"
+    entrypoint: ["chown", "-R", "10001", "/data/uploads"]
+    volumes:
+      - uploads:/data/uploads
+
+  api:
+    build:
+      context: ./apps/api
+      dockerfile: Dockerfile.prebuilt
+    image: filenorm-api:e2e
+    environment:
+      FILENORM_DB_URL: jdbc:postgresql://postgres:5432/filenorm
+      FILENORM_DB_PASSWORD: e2e-only
+      FILENORM_EXPOSE_MAGIC_LINK: "true"
+      FILENORM_DEMO_ACCESS_CODE: e2e-access-code
+      FILENORM_SMTP_HOST: mailpit
+      FILENORM_SMTP_PORT: "1025"
+      FILENORM_STORAGE_PATH: /data/uploads
+      FILENORM_WORKER_POLL_MS: "300"
+      TOTALRECALL_PROVISION_TOKEN: e2e-provision-token
+    ports:
+      - "127.0.0.1:${E2E_API_PORT:-18090}:8080"
+    volumes:
+      - uploads:/data/uploads
+    depends_on:
+      uploads-permissions:
+        condition: service_completed_successfully
+      postgres:
+        condition: service_healthy
+      mailpit:
+        condition: service_started
+
+volumes:
+  pgdata:
+  uploads:

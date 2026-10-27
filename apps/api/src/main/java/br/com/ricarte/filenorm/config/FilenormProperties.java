@@ -30,7 +30,8 @@ public record FilenormProperties(
             int magicLinkTtlMinutes,
             int sessionTtlDays,
             boolean exposeMagicLink,
-            boolean trustForwardedHost
+            boolean trustForwardedHost,
+            @DefaultValue("") String demoAccessCode
     ) {
     }
 

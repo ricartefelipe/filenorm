@@ -83,6 +83,22 @@ class StripeWebhookIntegrationTest extends PostgresIntegrationTest {
     }
 
     @Test
+    void refundsDoNotChangeTheBalanceAutomatically() throws Exception {
+        send(event("evt_7", "checkout.session.completed", "cs_6", "paid", "starter", "5000"))
+                .andExpect(jsonPath("$.result").value("credited"));
+        long afterPurchase = balance();
+
+        String refund = """
+                {"id":"evt_8","object":"event","api_version":"%s","created":1720000100,"type":"charge.refunded",
+                 "data":{"object":{"id":"ch_1","object":"charge","amount_refunded":5000,"refunded":true}}}
+                """.formatted(Stripe.API_VERSION);
+        send(refund).andExpect(status().isOk()).andExpect(jsonPath("$.result").value("ignored"));
+
+        // Política publicada: estorno não debita créditos automaticamente; o ajuste é manual (docs/OPERACAO.md).
+        assertThat(balance()).isEqualTo(afterPurchase);
+    }
+
+    @Test
     void rejectsForgedOrUnsignedEvents() throws Exception {
         String payload = event("evt_6", "checkout.session.completed", "cs_5", "paid", "scale", "1");
         long timestamp = System.currentTimeMillis() / 1000;

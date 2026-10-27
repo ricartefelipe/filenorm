@@ -1,6 +1,6 @@
 # FileNorm — Matriz de fechamento
 
-Base: branch `feature/melhoria-refactor`, HEAD `84e4315`, alterações locais não commitadas (26/10/2026).
+Base: branch `feature/melhoria-refactor`. Rodada 1 publicada em `48d186d`; rodada 2 (itens FN-23 a FN-30, aproveitados do prompt V4) local, não commitada (27/10/2026).
 Legenda de estado: **corrigido** (código + teste), **reproduzido** (falha observada antes da correção), **não aplicável**, **pendente**, **bloqueado**.
 
 ## Achados P0/P1
@@ -28,6 +28,14 @@ Legenda de estado: **corrigido** (código + teste), **reproduzido** (falha obser
 | FN-19 | P1 | Containers como root; Prometheus e actuator públicos no Caddy | Dockerfiles, Caddyfile | uid 10001 / `node`; `uploads-permissions` para volumes legados; proxy publica só `/actuator/health*` | ensaio de upgrade; `caddy validate` | corrigido |
 | FN-20 | P1 | Dependências com advisories (Boot 3.3.1: Tomcat, Spring, Jackson, Logback, driver PG; Next 15.5.21 crítico) | OSV/npm audit | Boot 3.5.16, PDFBox 3.0.8, patches de Tomcat/Jackson/PG/commons-lang3; `npm audit fix` + override `postcss ^8.5.23` | 69 testes + build web | corrigido, com 2 exceções (abaixo) |
 | FN-22 | P1 | Nenhuma prova de completude: um movimento faltando ou com sinal trocado passava como sucesso | sondagem: débito sem sinal no PDF virava crédito sem alerta | `BalanceCheck` (saldo inicial + movimentos = final), CSV linha a linha (`csv_balance_break`), PDF por linhas de saldo, OFX registra `LEDGERBAL`; `mismatch` → `partial` + `balance_mismatch`; migration 004; coluna no painel | `BalanceCheckTest`, `CsvParserTest` (+6), `PdfTextParserTest` (+2), `OfxParserTest` (+1), `JobIntegrationTest` (+3) | corrigido |
+| FN-23 | P0 | Demo gratuita num túnel público devolvia o link de login na tela: qualquer pessoa entrava como qualquer e-mail | `docker-compose.free.yml` (`EXPOSE_MAGIC_LINK=true` + `cloudflared`) | link só aparece com `FILENORM_DEMO_ACCESS_CODE`; IP/loopback não aceito (os cabeçalhos de proxy são confiados e podem ser forjados); `free-demo.sh` gera e imprime o código; campo no login | `MagicLinkIntegrationTest.linkIsOnlyRevealedWithTheDemoAccessCode`; smoke E2E (sem código e com `X-Forwarded-For` forjado) | corrigido |
+| FN-24 | P0 | Magic link usado em paralelo: consumo por leitura + delete da entidade | `AuthService.verifyMagicLink` | `DELETE` condicional (só quem apaga cria a sessão, na mesma transação) | `concurrentUseOfTheSameLinkCreatesExactlyOneSession` (4 threads → um 200, três 401, uma sessão); `expiredLinkIsRejected` | corrigido |
+| FN-25 | P0 | CNAB ignorava em silêncio registros de tipo desconhecido; não validava versão de leiaute, banco, trailer de lote nem moeda | leitura do parser | `cnab_unknown_record`, `cnab_layout_version_missing`, `cnab_invalid_bank_code`, `cnab_lot_count_mismatch`, `cnab_unsupported_currency` | `Cnab240ParserTest` (+4) | corrigido |
+| FN-26 | P1 | "Sair" do painel não encerrava a sessão no servidor | `AppShell.onLogout` | chama `POST /v1/auth/logout` antes de limpar o navegador | smoke E2E (sessão → 401 após logout); build web | corrigido |
+| FN-27 | P1 | Imagens com HIGH/CRITICAL fora do projeto: npm embutido no `node:22-alpine` (11) e `pebble` na base `eclipse-temurin` (3); imagens e actions por tag mutável | Trivy 0.69.3 | web sem npm/yarn, Next iniciado com `node`, dev deps podadas; `pebble` removido; todas as imagens por digest e actions por SHA; Trivy como gate no CI com `.trivyignore.yaml` expirando | Trivy: web 0, API 0 fora das 2 exceções; container web sobe e responde 200 como `node` | corrigido |
+| FN-28 | P1 | Arquivos originais órfãos ficavam no disco para sempre | `createJob` limpa só em rollback, não em queda do processo | varredura horária de arquivos sem job há mais de 1 h | `orphanUploadFilesAreRemovedButFilesOfExistingJobsStay` | corrigido |
+| FN-29 | P1 | Estorno no Stripe sem política definida | webhook só trata pagamento | política publicada: estorno não debita créditos automaticamente (ajuste manual) | `refundsDoNotChangeTheBalanceAutomatically` | corrigido (política) |
+| FN-30 | P1 | CI sem jornada integrada, restore e scan de imagem | `ci.yml` | job `e2e`: Compose real + `scripts/smoke-e2e.sh` (login, jobs, autorização negativa, limite 413, logout, backup → restore) + gate Trivy | `smoke-e2e.sh` local: 18 verificações, exit 0, 54 s | corrigido localmente; **pendente** de execução no GitHub |
 | FN-21 | P1 | Backup/restore inexistentes | — | `scripts/backup.sh` / `restore.sh` (checksums, recusa banco populado) | ensaio real (ver OPERACAO.md) | corrigido |
 
 **Não aplicável:**
@@ -40,7 +48,9 @@ Legenda de estado: **corrigido** (código + teste), **reproduzido** (falha obser
 | Gate | Comando | Resultado |
 |---|---|---|
 | Baseline API (antes) | `mvn test` com Postgres descartável | 4/4; sem banco: 1 erro |
-| API (final) | `./scripts/test-api.sh` — Java 21.0.12, Maven 3.9.12, Docker 29.8.2 | **84/84**, 0 falhas, 0 skips (inclui a prova de fechamento) |
+| API (rodada 2) | `./scripts/test-api.sh` — Java 21.0.12, Maven 3.9.12, Docker 29.8.2 | **93/93**, 0 falhas, 0 skips. Sem alteração Java depois desta execução |
+| Smoke E2E | `./scripts/smoke-e2e.sh` (imagem e Compose reais) | 18/18 verificações, exit 0 |
+| Scan de imagens | Trivy 0.69.3 (DB de 26/10/2026), HIGH/CRITICAL, com `.trivyignore.yaml` | API 0, web 0 (antes: API 5, web 11) |
 | Trava de banco | `FILENORM_TEST_DB_URL=…:5434… mvn test` | recusado, como esperado |
 | Web | `npm ci && npx tsc --noEmit && npm run build` (Node 24.15, npm 12.0.2) | ok |
 | SCA web | `npm audit --omit=dev` / `npm audit` | 0 / 0 (antes: 5, 1 crítica) |
@@ -52,15 +62,15 @@ Legenda de estado: **corrigido** (código + teste), **reproduzido** (falha obser
 | `git diff --check` | — | ok |
 
 **Não executados:**
-- GitHub Actions: depende de push do proprietário.
-- Scanner de imagem: `trivy`/`grype` não estão instalados; comando sugerido: `trivy image filenorm-api` após o build.
+- GitHub Actions: o workflow só dispara em PR ou push para `master`/`develop`; o push de `48d186d` na feature não o executou. Abrir o PR.
+- Scan para arm64: só amd64 foi escaneado; as imagens base são multi-arquitetura, mas o resultado não se transfere.
 - Lint do Next: o projeto não tem ESLint configurado, e `next lint` abriria uma configuração interativa.
 - Stripe real/sandbox: não há chaves.
 - SMTP real: o ensaio usou Mailpit.
 
 ### Exceções de segurança aceitas (revisar até 31/01/2027)
 
-- `spring-webmvc 6.2.19` — GHSA-j9f9-w8pj-32f8 (SSE com fragments) e GHSA-pc63-qcmh-9cmg (XsltView). Correção só no Spring 7 / Boot 4 (major). O projeto não usa SSE nem `XsltView` (grep). Plano: migrar para o Boot 4 como tarefa própria.
+- `spring-webmvc 6.2.19` — CVE-2026-47890 / GHSA-j9f9-w8pj-32f8 (SSE com fragments) e CVE-2026-47884 / GHSA-pc63-qcmh-9cmg (XsltView). Correção só no Spring 7 / Boot 4 (major). O projeto é só REST e não usa SSE nem `XsltView` (grep). Registradas em `.trivyignore.yaml` com expiração; depois disso o CI volta a falhar. Plano: migrar para o Boot 4 como tarefa própria.
 - `log4j-api 2.24.3` — GHSA-qv9r-c865-cp47 (moderada, `MapMessage`). O backend de log é o Logback e `MapMessage` não é usado.
 - `next 15.5.28`: correções futuras só no 16 (major). O override de `postcss` foge do pin do Next e deve ser removido ao migrar.
 
@@ -71,7 +81,8 @@ Legenda de estado: **corrigido** (código + teste), **reproduzido** (falha obser
 - **CNAB:** posições FEBRABAN validadas apenas com fixture sintética; bancos que divergem do padrão falham ou são rejeitados.
 - **Presets `nubank`/`inter`:** validados por cabeçalho sintético, não com exportações reais.
 - **`rawRef`:** guarda a linha original (pode conter nomes), isolada por conta e removida com o job; não há criptografia em repouso própria (depende do disco).
-- **Stripe:** reembolso/chargeback não estorna créditos automaticamente; a conciliação é manual.
+- **Stripe:** reembolso/chargeback não estorna créditos automaticamente (política documentada e testada); a conciliação é manual.
+- **Demo:** quem tem o código de acesso entra com qualquer e-mail. O código só reduz a exposição a convidados; a demo não deve receber arquivos reais.
 
 ## Backlog P2 (adiado com justificativa)
 
@@ -109,7 +120,8 @@ Legenda de estado: **corrigido** (código + teste), **reproduzido** (falha obser
 ## Arquivos para revisão/staging
 
 - **Modificados (55):** ver `git status`.
-- **Novos (36):**
+- **Novos (rodada 2):** `.trivyignore.yaml`, `docker-compose.e2e.yml`, `scripts/smoke-e2e.sh`, `MagicLinkIntegrationTest`.
+- **Novos (rodada 1, 36):**
   - `.github/workflows/ci.yml`, `docker-compose.test.yml`
   - `scripts/test-api.sh`, `scripts/backup.sh`, `scripts/restore.sh`
   - `docs/OPERACAO.md`, `docs/COMERCIAL.md`, `docs/FECHAMENTO.md`, `docs/PILOTO.md`, `docs/SPEC-PAINEL-UPLOAD.md`, `docs/ESTRATEGIA.md`

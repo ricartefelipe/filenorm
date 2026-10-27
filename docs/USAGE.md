@@ -3,7 +3,7 @@
 ## 1. Entrar e criar API key
 
 1. Abra o painel e peça um magic link.
-2. Em demo, o link aparece na tela.
+2. Em demo, informe o código de acesso da demo para o link aparecer na tela; sem ele, o link vai só por e-mail.
 3. Em Conta → crie uma API key (`fn_live_...`). Copie na hora.
 
 A API key deixa de funcionar quando é revogada ou quando a conta é desativada/expira.
@@ -115,7 +115,7 @@ Até 1.000 issues são armazenadas por job; os totais ficam em `rejectedCount`, 
 |---|---|---|
 | OFX | 1.x (SGML) e 2.x (XML); `CHARSET`/`encoding` declarado; moeda por `CURDEF`; valores `-42.50` ou `1.234,56` | múltiplas contas com moedas diferentes no mesmo arquivo |
 | CSV | delimitador `;` `,` tab `\|`; aspas RFC 4180; UTF-8 ou Windows-1252; datas `aaaa-mm-dd`, `dd/mm/aaaa`, `dd-mm-aaaa`, `aaaa/mm/dd`; valores pt-BR ou en-US; moeda BRL | colunas separadas de débito/crédito; valores ambíguos como `1.500` sem centavos (rejeitados) |
-| CNAB 240 | **retorno de cobrança FEBRABAN (serviço 01), segmentos T/U**, posições do padrão v08–v10; valida tamanho das linhas, header, trailer e quantidade de registros | remessa, extrato (serviço 04), pagamentos (segmentos A/J), leiautes de banco que divergem do padrão FEBRABAN |
+| CNAB 240 | **retorno de cobrança FEBRABAN (serviço 01), segmentos T/U**, posições do padrão v08–v10; valida tamanho das linhas, banco e versão de leiaute no header, quantidade de registros do arquivo e de cada lote, pares T/U e moeda Real (09); registro de tipo desconhecido vira issue `cnab_unknown_record` | remessa, extrato (serviço 04), pagamentos (segmentos A/J), leiautes de banco que divergem do padrão FEBRABAN |
 | PDF | extratos com camada de texto; linha com data `dd/mm/aaaa` e valor pt-BR (`-`, `D`/`C`); até 100 páginas | PDF escaneado (sem OCR), datas sem ano (rejeitadas), layouts de várias colunas |
 
 Os presets `nubank` e `inter` localizam colunas pelos cabeçalhos (`Data`, `Valor`, `Descrição` / `Data Lançamento`, `Histórico`). Foram validados com arquivos sintéticos, não com exportações reais desses bancos.

@@ -13,6 +13,9 @@ import org.springframework.test.web.servlet.MvcResult;
 /** Cria contas reais pelo fluxo público (magic link → sessão → API key). */
 public final class TestAccounts {
 
+    /** Igual a filenorm.auth.demo-access-code em application-test.yml. */
+    public static final String DEMO_CODE = "test-demo-code";
+
     private TestAccounts() {
     }
 
@@ -23,7 +26,7 @@ public final class TestAccounts {
         String email = "acct-" + UUID.randomUUID() + "@example.com";
         MvcResult magic = mockMvc.perform(post("/v1/auth/magic-link")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"email\":\"" + email + "\",\"name\":\"Test\"}"))
+                        .content("{\"email\":\"" + email + "\",\"name\":\"Test\",\"accessCode\":\"" + DEMO_CODE + "\"}"))
                 .andExpect(status().isOk())
                 .andReturn();
         String link = objectMapper.readTree(magic.getResponse().getContentAsString()).get("magicLink").asText();

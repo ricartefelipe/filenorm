@@ -13,7 +13,8 @@ Serviços: `postgres`, `uploads-permissions` (ajuste único de dono do volume, t
 
 | Variável | Produção | Por quê |
 |---|---|---|
-| `FILENORM_EXPOSE_MAGIC_LINK` | `false` (já fixo no compose de produção) | `true` devolve o link de login na resposta — só para demo |
+| `FILENORM_EXPOSE_MAGIC_LINK` | `false` (já fixo no compose de produção) | `true` devolve o link de login na resposta, **só** para quem informar `FILENORM_DEMO_ACCESS_CODE` — uso exclusivo de demo |
+| `FILENORM_DEMO_ACCESS_CODE` | vazio | código da demo; vazio = o link nunca aparece na resposta. IP/loopback não é aceito como prova (cabeçalhos de proxy podem ser forjados) |
 | `FILENORM_DB_PASSWORD` | obrigatório, forte | o compose recusa subir sem ele |
 | `STRIPE_WEBHOOK_SECRET` | `whsec_...` do endpoint | sem ele o webhook responde 503 e nenhum crédito é concedido |
 | `TOTALRECALL_PROVISION_TOKEN` | segredo longo ou vazio | vazio desativa `/internal/v1/totalrecall/*` |
@@ -37,6 +38,20 @@ Ensaio realizado: banco e volume criados pela versão `84e4315` (API como root, 
 
 Rollback: a migration é aditiva, então a versão anterior lê o banco migrado. Os jobs `partial` aparecem para ela como um status desconhecido.
 
+### Imagens fixadas por digest
+
+Dockerfiles e Compose usam `imagem:tag@sha256:…` (índice multi-arquitetura). Para atualizar:
+
+```bash
+docker buildx imagetools inspect eclipse-temurin:21-jre --format '{{.Manifest.Digest}}'
+```
+
+Troque o digest no Dockerfile/Compose, rode `./scripts/test-api.sh`, `./scripts/smoke-e2e.sh` e o scan de imagens (abaixo). As actions do CI também estão fixadas por SHA, com a versão em comentário. Fixar digest torna o build reproduzível; não corrige CVEs, por isso o scan continua no CI.
+
+### Scan de imagens
+
+O CI constrói as imagens da API e do web e roda o Trivy (versão fixada por digest): qualquer HIGH/CRITICAL falha o build, exceto as exceções de `.trivyignore.yaml`, que têm justificativa e data de expiração. A imagem da API remove o `/usr/bin/pebble` da base (binário Go fora do dpkg, não usado pela JVM); a do web não leva npm/yarn e inicia o Next com `node`.
+
 ## Backup e restauração
 
 ```bash
@@ -58,6 +73,16 @@ Ensaio realizado: backup de um ambiente com 7 eventos (OFX legado, CSV parcial e
 
 Objetivos (premissas, não medições de produção): RPO = intervalo entre backups agendados pelo operador; RTO ≈ subir os containers + `pg_restore` (segundos para bases pequenas; meça com o tamanho real).
 
+### Ensaio automatizado
+
+`./scripts/smoke-e2e.sh` (também no CI) sobe a imagem e o Compose reais (`docker-compose.e2e.yml`) e verifica:
+- login por magic link com código, e sem código;
+- API key, OFX/CSV/CNAB e prova de fechamento;
+- autorização negativa entre contas, upload acima do limite (413) e logout;
+- backup → restore em banco vazio, com os eventos idênticos lidos pela API restaurada.
+
+Saída `0` sucesso, `1` falha, `2` inconclusivo (ambiente). Remove apenas os próprios projetos.
+
 ## Observabilidade
 
 - `GET /actuator/health/liveness` e `/actuator/health/readiness`.
@@ -77,5 +102,7 @@ Alertas sugeridos: `queued` crescendo por mais de 10 min; aumento de `failed` co
 | Job em `failed` / `max_attempts_exceeded` | worker reiniciado repetidamente durante o processamento | veja os logs da API no horário; reenvie o arquivo |
 | Job `failed` / `insufficient_credits` | saldo consumido por outros jobs entre o envio e o processamento | compre créditos e reenvie |
 | Job `partial` | linhas inválidas no arquivo | `GET /v1/jobs/{id}/issues` mostra linha e motivo |
+| Estorno/chargeback no Stripe | **política atual: não há débito automático de créditos** (o evento `charge.refunded` é ignorado, com teste) | ajuste manual: remover créditos da conta e registrar o motivo; automatizar está no backlog |
+| Arquivo original sem job no disco | processo interrompido entre gravar o upload e confirmar o job | a rotina horária remove arquivos órfãos com mais de 1 h |
 | Pagamento aprovado sem créditos | webhook não configurado/assinatura inválida, ou sessão sem `payment_status=paid` (boleto pendente) | confira `STRIPE_WEBHOOK_SECRET` e o log de entregas no painel do Stripe; o reenvio do evento é seguro (idempotente) |
 | `mvn test` recusa o banco | os testes só rodam em Postgres local descartável | use `./scripts/test-api.sh` |

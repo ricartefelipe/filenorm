@@ -67,11 +67,11 @@ public class AuthService {
 
     @Transactional
     public Map<String, Object> requestMagicLink(String email, String name) {
-        return requestMagicLink(email, name, null);
+        return requestMagicLink(email, name, null, properties.auth().exposeMagicLink());
     }
 
     @Transactional
-    public Map<String, Object> requestMagicLink(String email, String name, String appBaseUrlOverride) {
+    public Map<String, Object> requestMagicLink(String email, String name, String appBaseUrlOverride, boolean revealLink) {
         Account account = ensureAccount(email, name == null || name.isBlank() ? email : name);
         String rawToken = randomToken(32);
         Instant now = Instant.now();
@@ -93,7 +93,7 @@ public class AuthService {
         Map<String, Object> body = new LinkedHashMap<>();
         body.put("sent", true);
         body.put("email", account.getEmail());
-        if (properties.auth().exposeMagicLink()) {
+        if (revealLink) {
             body.put("magicLink", link);
         }
         return body;
@@ -101,13 +101,13 @@ public class AuthService {
 
     @Transactional
     public Map<String, Object> verifyMagicLink(String rawToken) {
-        LoginToken loginToken = loginTokenRepository.findByTokenHash(TokenHasher.sha256(rawToken))
+        String tokenHash = TokenHasher.sha256(rawToken);
+        LoginToken loginToken = loginTokenRepository.findByTokenHash(tokenHash)
                 .orElseThrow(() -> new ApiException(HttpStatus.UNAUTHORIZED, "invalid_token"));
-        Instant now = Instant.now();
-        if (loginToken.getExpiresAt().isBefore(now)) {
+        // A sessão só é criada por quem consumiu o token; se a criação falhar, o consumo é desfeito.
+        if (loginTokenRepository.consume(tokenHash, Instant.now()) != 1) {
             throw new ApiException(HttpStatus.UNAUTHORIZED, "invalid_token");
         }
-        loginTokenRepository.delete(loginToken);
 
         Account account = accountRepository.findById(loginToken.getAccountId())
                 .orElseThrow(() -> new ApiException(HttpStatus.UNAUTHORIZED, "invalid_token"));

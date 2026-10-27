@@ -54,10 +54,17 @@ public class Cnab240Parser {
             throw new ParseException("cnab_record_count_mismatch");
         }
         String bank = field(header, 1, 3);
+        if (!bank.matches("\\d{3}")) {
+            throw new ParseException("cnab_invalid_bank_code");
+        }
+        if (!field(header, 164, 166).matches("\\d{3}")) {
+            throw new ParseException("cnab_layout_version_missing");
+        }
 
         List<NormalizedEventData> events = new ArrayList<>();
         List<ParseIssue> issues = new ArrayList<>();
         String lastT = null;
+        int lotLines = -1;
         for (int i = 1; i < lines.size() - 1; i++) {
             String line = lines.get(i);
             String ref = "line " + (i + 1);
@@ -66,9 +73,24 @@ public class Cnab240Parser {
                 if (!"01".equals(field(line, 10, 11))) {
                     throw new ParseException("cnab_layout_unsupported");
                 }
+                lotLines = 1;
                 continue;
             }
-            if (type != '3') {
+            if (type == '5') {
+                // Trailer de lote: quantidade de registros do lote, incluindo header e trailer do lote.
+                String declared = field(line, 18, 23);
+                if (lotLines < 0 || !declared.matches("\\d+") || Integer.parseInt(declared) != lotLines + 1) {
+                    throw new ParseException("cnab_lot_count_mismatch");
+                }
+                lotLines = -1;
+                lastT = null;
+                continue;
+            }
+            if (lotLines >= 0) {
+                lotLines++;
+            }
+            if (type != '3' || lotLines < 0) {
+                issues.add(ParseIssue.rejected("cnab_unknown_record", ref, "tipo de registro " + type));
                 continue;
             }
             char segment = line.charAt(13);
@@ -114,6 +136,11 @@ public class Cnab240Parser {
         LocalDate postedAt = creditDate != null ? creditDate : occurrenceDate;
         if (postedAt == null) {
             issues.add(ParseIssue.rejected("cnab_invalid_date", ref, null));
+            return;
+        }
+        String currency = field(t, 131, 132);
+        if (!"09".equals(currency)) {
+            issues.add(ParseIssue.rejected("cnab_unsupported_currency", ref, "código de moeda " + currency));
             return;
         }
         String ourNumber = field(t, 38, 57);

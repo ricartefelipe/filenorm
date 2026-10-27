@@ -109,6 +109,50 @@ class Cnab240ParserTest {
     }
 
     @Test
+    void unknownRecordTypeIsReportedNotDropped() throws Exception {
+        List<String> lines = lines();
+        lines.add(8, replace(lines.get(7), 8, "7"));
+        lines.set(9, replace(lines.get(9), 18, "000009"));
+        lines.set(lines.size() - 1, replace(lines.get(lines.size() - 1), 24, "000011"));
+
+        ParseResult result = parser.parse(join(lines));
+
+        assertThat(result.issues()).extracting(issue -> issue.code() + "@" + issue.recordRef())
+                .contains("cnab_unknown_record@line 9");
+        assertThat(result.count(ParseIssue.REJECTED)).isEqualTo(1);
+    }
+
+    @Test
+    void lotTrailerCountMustMatch() throws Exception {
+        List<String> lines = lines();
+        lines.set(8, replace(lines.get(8), 18, "000007"));
+
+        assertThatThrownBy(() -> parser.parse(join(lines))).hasMessage("cnab_lot_count_mismatch");
+    }
+
+    @Test
+    void foreignCurrencyTitleIsRejected() throws Exception {
+        List<String> lines = lines();
+        lines.set(2, replace(lines.get(2), 131, "10"));
+
+        ParseResult result = parser.parse(join(lines));
+
+        assertThat(result.events()).extracting(e -> e.amount().toPlainString()).containsExactly("1234.56");
+        assertThat(result.issues()).extracting(ParseIssue::code).contains("cnab_unsupported_currency");
+    }
+
+    @Test
+    void headerMustIdentifyBankAndLayoutVersion() throws Exception {
+        List<String> noVersion = lines();
+        noVersion.set(0, replace(noVersion.get(0), 164, "   "));
+        assertThatThrownBy(() -> parser.parse(join(noVersion))).hasMessage("cnab_layout_version_missing");
+
+        List<String> noBank = lines();
+        noBank.set(0, replace(noBank.get(0), 1, "ABC"));
+        assertThatThrownBy(() -> parser.parse(join(noBank))).hasMessage("cnab_invalid_bank_code");
+    }
+
+    @Test
     void detectsCnabByContentWithoutExtension() throws Exception {
         assertThat(FormatDetector.detect(fixture(), "retorno.txt", "text/plain")).isEqualTo("cnab240");
         assertThat(FormatDetector.detect(fixture(), "upload.bin", "application/octet-stream")).isEqualTo("cnab240");
