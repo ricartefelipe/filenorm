@@ -18,3 +18,5 @@ data/
 .superpowers/
 AGENTS.md
 PROMPT-EVOLUCAO.md
+backups/
+*.tsbuildinfo

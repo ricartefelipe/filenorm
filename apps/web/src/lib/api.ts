@@ -41,6 +41,10 @@ export type JobSummary = {
   format?: string;
   fileName?: string;
   creditsCharged?: number;
+  eventCount?: number;
+  rejectedCount?: number;
+  balanceStatus?: string | null;
+  errorCode?: string | null;
   createdAt: string;
   finishedAt?: string | null;
 };
@@ -74,6 +78,10 @@ type JobApiResponse = {
   fileName?: string;
   originalFilename?: string;
   creditsCharged?: number;
+  eventCount?: number;
+  rejectedCount?: number;
+  balanceStatus?: string | null;
+  errorCode?: string | null;
   createdAt: string;
   finishedAt?: string | null;
 };
@@ -136,6 +144,10 @@ function mapJob(data: JobApiResponse): JobSummary {
     format: data.format,
     fileName: data.fileName ?? data.originalFilename,
     creditsCharged: data.creditsCharged,
+    eventCount: data.eventCount,
+    rejectedCount: data.rejectedCount,
+    balanceStatus: data.balanceStatus,
+    errorCode: data.errorCode,
     createdAt: data.createdAt,
     finishedAt: data.finishedAt,
   };
@@ -245,7 +257,7 @@ export async function listJobs(sessionToken: string): Promise<JobSummary[] | nul
 
 export async function startCheckout(
   sessionToken: string,
-  pack: "starter" | "pro",
+  pack: "starter" | "growth",
   successUrl: string,
   cancelUrl: string
 ): Promise<{ url: string }> {

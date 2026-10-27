@@ -52,8 +52,7 @@ public class AccountController {
     @GetMapping("/jobs")
     public List<Map<String, Object>> listJobs() {
         UUID accountId = AccountContext.requireAccountId();
-        return jobRepository.findByAccountIdOrderByCreatedAtDesc(accountId).stream()
-                .limit(50)
+        return jobRepository.findTop50ByAccountIdOrderByCreatedAtDesc(accountId).stream()
                 .map(this::jobSummary)
                 .toList();
     }
@@ -119,6 +118,9 @@ public class AccountController {
         item.put("format", job.getFormat());
         item.put("originalFilename", job.getOriginalFilename());
         item.put("creditsCharged", job.getCreditsCharged());
+        item.put("eventCount", job.getEventCount());
+        item.put("rejectedCount", job.getRejectedCount());
+        item.put("balanceStatus", job.getBalanceStatus());
         item.put("errorCode", job.getErrorCode());
         item.put("createdAt", job.getCreatedAt().toString());
         item.put("finishedAt", job.getFinishedAt() == null ? null : job.getFinishedAt().toString());

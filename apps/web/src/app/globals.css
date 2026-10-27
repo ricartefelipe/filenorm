@@ -12,6 +12,7 @@
   --accent-dim: #0d9488;
   --danger: #f87171;
   --ok: #34d399;
+  --warn: #fbbf24;
   --shadow: 0 20px 60px rgba(0, 0, 0, 0.45);
   --radius: 10px;
   --font-display: "IBM Plex Sans", system-ui, sans-serif;
@@ -224,6 +225,21 @@ select {
 }
 
 .badge.failed {
+  color: var(--danger);
+  border-color: color-mix(in srgb, var(--danger) 50%, var(--line));
+}
+
+.badge.partial {
+  color: var(--warn);
+  border-color: color-mix(in srgb, var(--warn) 50%, var(--line));
+}
+
+.badge.balance-verified {
+  color: var(--ok);
+  border-color: color-mix(in srgb, var(--ok) 50%, var(--line));
+}
+
+.badge.balance-mismatch {
   color: var(--danger);
   border-color: color-mix(in srgb, var(--danger) 50%, var(--line));
 }

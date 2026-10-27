@@ -1,0 +1,15 @@
+databaseChangeLog:
+  - changeSet:
+      id: 004-balance-check
+      author: filenorm
+      changes:
+        - addColumn:
+            tableName: jobs
+            columns:
+              - column: { name: balance_status, type: varchar(20) }
+              - column: { name: balance_source, type: varchar(40) }
+              - column: { name: balance_reason, type: varchar(60) }
+              - column: { name: opening_balance, type: "numeric(18, 2)" }
+              - column: { name: closing_balance, type: "numeric(18, 2)" }
+              - column: { name: computed_closing_balance, type: "numeric(18, 2)" }
+              - column: { name: balance_difference, type: "numeric(18, 2)" }

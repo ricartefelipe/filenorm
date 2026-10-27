@@ -1,15 +1,19 @@
 # FileNorm
 
-API de normalização de arquivos financeiros. Envie OFX, CNAB, CSV bancário ou extrato PDF e receba eventos padronizados (crédito/débito, valor, data, contraparte, chave de idempotência).
+API de normalização de arquivos financeiros. Envie OFX, CNAB 240 (retorno de cobrança FEBRABAN), CSV bancário ou extrato PDF com texto e receba eventos padronizados (crédito/débito, valor, moeda, data, contraparte, chave de idempotência). Registros que não puderam ser convertidos são listados por linha — nada é descartado em silêncio — e, quando o arquivo traz saldos, o resultado vem com a prova de fechamento (saldo inicial + movimentos = saldo final).
 
-Guia de uso: [`docs/USAGE.md`](docs/USAGE.md)
+- Uso da API e formatos suportados: [`docs/USAGE.md`](docs/USAGE.md)
+- Instalação, upgrade, backup/restore e operação: [`docs/OPERACAO.md`](docs/OPERACAO.md)
+- Oferta e limites comerciais: [`docs/COMERCIAL.md`](docs/COMERCIAL.md)
+- Estratégia, roadmap e roteiro de descoberta: [`docs/ESTRATEGIA.md`](docs/ESTRATEGIA.md)
+- Matriz de fechamento e pendências: [`docs/FECHAMENTO.md`](docs/FECHAMENTO.md)
 
 ## Stack
 
-- Java 21, Spring Boot 3, PostgreSQL 16
-- Jobs assíncronos no Postgres (`SKIP LOCKED`)
+- Java 21, Spring Boot 3.5, PostgreSQL 16
+- Jobs assíncronos no Postgres (`SKIP LOCKED`, lease com expiração e limite de tentativas)
 - Painel em Next.js (chaves, créditos, jobs)
-- Cobrança pay-per-use via pacotes de créditos (Stripe)
+- Cobrança pay-per-use via pacotes de créditos (Stripe; créditos só pelo webhook assinado)
 
 ## Estrutura
 
@@ -34,7 +38,15 @@ cd apps/web && npm install && npm run dev
 - Painel: `http://localhost:3000`
 - Postgres: `localhost:5434`
 - Mailpit: `http://localhost:18026`
-- Testes: `cd apps/api && mvn test`
+
+## Testes
+
+```bash
+./scripts/test-api.sh          # API: sobe Postgres descartável (5433, tmpfs), roda mvn test e derruba
+cd apps/web && npm ci && npx tsc --noEmit && npm run build
+```
+
+Os testes de integração truncam as tabelas: eles recusam rodar contra a base de desenvolvimento (5434) ou hosts remotos. CI em `.github/workflows/ci.yml`.
 
 ## Demo gratuita (sem VPS/domínio)
 
@@ -49,6 +61,8 @@ Painel em `http://localhost:9081` + URL HTTPS pública via túnel. Detalhes: [`d
 ```bash
 docker compose -f docker-compose.prod.yml up -d --build
 ```
+
+Antes de atualizar uma instalação existente, leia a seção de upgrade em [`docs/OPERACAO.md`](docs/OPERACAO.md).
 
 ## Gitflow
 

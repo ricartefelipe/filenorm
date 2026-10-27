@@ -7,4 +7,8 @@ import org.springframework.data.jpa.repository.JpaRepository;
 public interface CreditLedgerRepository extends JpaRepository<CreditLedgerEntry, UUID> {
 
     List<CreditLedgerEntry> findTop20ByAccountIdOrderByCreatedAtDesc(UUID accountId);
+
+    boolean existsByOperationKey(String operationKey);
+
+    List<CreditLedgerEntry> findByJobId(UUID jobId);
 }

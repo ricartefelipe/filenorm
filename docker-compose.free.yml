@@ -18,6 +18,15 @@ services:
     ports:
       - "18026:8025"
 
+  # Volumes criados por versões que rodavam como root: ajusta o dono para o usuário da API (uid 10001).
+  uploads-permissions:
+    image: postgres:16-alpine
+    user: "0"
+    entrypoint: ["chown", "-R", "10001", "/data/uploads"]
+    volumes:
+      - filenorm_free_uploads:/data/uploads
+    restart: "no"
+
   api:
     build:
       context: ./apps/api
@@ -40,6 +49,8 @@ services:
     volumes:
       - filenorm_free_uploads:/data/uploads
     depends_on:
+      uploads-permissions:
+        condition: service_completed_successfully
       postgres:
         condition: service_healthy
       mailpit:

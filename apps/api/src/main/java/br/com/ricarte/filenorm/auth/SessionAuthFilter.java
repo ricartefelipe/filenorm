@@ -30,7 +30,7 @@ public class SessionAuthFilter extends OncePerRequestFilter {
             FilterChain filterChain
     ) throws ServletException, IOException {
         String path = request.getRequestURI();
-        if (!requiresSession(path)) {
+        if (isCorsPreflight(request) || !requiresSession(path)) {
             filterChain.doFilter(request, response);
             return;
         }
@@ -71,5 +71,10 @@ public class SessionAuthFilter extends OncePerRequestFilter {
             return true;
         }
         return false;
+    }
+
+    /** Preflight não carrega credenciais; quem decide é a configuração de CORS. */
+    private static boolean isCorsPreflight(HttpServletRequest request) {
+        return "OPTIONS".equals(request.getMethod()) && request.getHeader("Access-Control-Request-Method") != null;
     }
 }

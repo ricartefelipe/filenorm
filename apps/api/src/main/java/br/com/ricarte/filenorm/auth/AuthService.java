@@ -175,7 +175,6 @@ public class AuthService {
         return sessionRepository.findByTokenHash(TokenHasher.sha256(sessionRaw))
                 .filter(session -> session.active(Instant.now()))
                 .map(Session::getAccountId)
-                .filter(accountRepository::existsById)
                 .filter(accountId -> accountRepository.findById(accountId).map(this::accountActive).orElse(false));
     }
 
@@ -219,6 +218,6 @@ public class AuthService {
     }
 
     private boolean accountActive(Account account) {
-        return account.isEnabled() && (account.getExpiresAt() == null || account.getExpiresAt().isAfter(Instant.now()));
+        return account.isActive(Instant.now());
     }
 }

@@ -15,6 +15,12 @@ public abstract class PostgresIntegrationTest {
                 "FILENORM_TEST_DB_URL",
                 "jdbc:postgresql://127.0.0.1:5433/filenorm"
         );
+        // Os testes truncam todas as tabelas: recusa a base de desenvolvimento (5434) e hosts remotos.
+        if (url.contains(":5434/") || !(url.contains("//127.0.0.1:") || url.contains("//localhost:"))) {
+            if (!"true".equals(System.getenv("FILENORM_TEST_DB_ALLOW_ANY"))) {
+                throw new IllegalStateException("refusing to run destructive tests against " + url);
+            }
+        }
         String user = System.getenv().getOrDefault("FILENORM_TEST_DB_USER", "filenorm");
         String password = System.getenv().getOrDefault("FILENORM_TEST_DB_PASSWORD", "filenorm");
         registry.add("spring.datasource.url", () -> url);
