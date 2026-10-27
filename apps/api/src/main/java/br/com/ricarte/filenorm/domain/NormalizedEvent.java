@@ -48,6 +48,9 @@ public class NormalizedEvent {
     @Column(nullable = false)
     private int ordinal;
 
+    @Column(name = "idempotency_key", length = 64)
+    private String idempotencyKey;
+
     protected NormalizedEvent() {
     }
 
@@ -63,7 +66,8 @@ public class NormalizedEvent {
             String description,
             String rawRef,
             BigDecimal confidence,
-            int ordinal
+            int ordinal,
+            String idempotencyKey
     ) {
         this.id = id;
         this.jobId = jobId;
@@ -77,6 +81,7 @@ public class NormalizedEvent {
         this.rawRef = rawRef;
         this.confidence = confidence;
         this.ordinal = ordinal;
+        this.idempotencyKey = idempotencyKey;
     }
 
     public UUID getId() {
@@ -125,5 +130,9 @@ public class NormalizedEvent {
 
     public int getOrdinal() {
         return ordinal;
+    }
+
+    public String getIdempotencyKey() {
+        return idempotencyKey;
     }
 }

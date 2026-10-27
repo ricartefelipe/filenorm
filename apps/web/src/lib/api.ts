@@ -41,6 +41,10 @@ export type JobSummary = {
   format?: string;
   fileName?: string;
   creditsCharged?: number;
+  eventCount?: number;
+  rejectedCount?: number;
+  balanceStatus?: string | null;
+  errorCode?: string | null;
   createdAt: string;
   finishedAt?: string | null;
 };
@@ -74,6 +78,10 @@ type JobApiResponse = {
   fileName?: string;
   originalFilename?: string;
   creditsCharged?: number;
+  eventCount?: number;
+  rejectedCount?: number;
+  balanceStatus?: string | null;
+  errorCode?: string | null;
   createdAt: string;
   finishedAt?: string | null;
 };
@@ -136,6 +144,10 @@ function mapJob(data: JobApiResponse): JobSummary {
     format: data.format,
     fileName: data.fileName ?? data.originalFilename,
     creditsCharged: data.creditsCharged,
+    eventCount: data.eventCount,
+    rejectedCount: data.rejectedCount,
+    balanceStatus: data.balanceStatus,
+    errorCode: data.errorCode,
     createdAt: data.createdAt,
     finishedAt: data.finishedAt,
   };
@@ -143,14 +155,23 @@ function mapJob(data: JobApiResponse): JobSummary {
 
 export async function requestMagicLink(
   email: string,
-  name: string
+  name: string,
+  accessCode?: string
 ): Promise<{ sent: boolean; email: string; magicLink?: string }> {
   const response = await fetch(`${resolveApiBase()}/v1/auth/magic-link`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ email, name }),
+    body: JSON.stringify(accessCode ? { email, name, accessCode } : { email, name }),
   });
   return parse(response);
+}
+
+export async function logout(sessionToken: string): Promise<void> {
+  // Encerra a sessão no servidor; falha de rede não impede o logout local.
+  await fetch(`${resolveApiBase()}/v1/auth/logout`, {
+    method: "POST",
+    headers: authHeaders(sessionToken),
+  }).catch(() => undefined);
 }
 
 export async function loginWithPassword(email: string, password: string): Promise<AccountSession> {
@@ -245,7 +266,7 @@ export async function listJobs(sessionToken: string): Promise<JobSummary[] | nul
 
 export async function startCheckout(
   sessionToken: string,
-  pack: "starter" | "pro",
+  pack: "starter" | "growth",
   successUrl: string,
   cancelUrl: string
 ): Promise<{ url: string }> {

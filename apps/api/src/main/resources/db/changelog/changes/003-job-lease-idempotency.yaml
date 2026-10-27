@@ -1,0 +1,66 @@
+databaseChangeLog:
+  - changeSet:
+      id: 003-job-lease-idempotency
+      author: filenorm
+      changes:
+        - addColumn:
+            tableName: jobs
+            columns:
+              - column: { name: attempts, type: int, defaultValueNumeric: 0, constraints: { nullable: false } }
+              - column: { name: lease_expires_at, type: timestamptz }
+              - column: { name: event_count, type: int, defaultValueNumeric: 0, constraints: { nullable: false } }
+              - column: { name: rejected_count, type: int, defaultValueNumeric: 0, constraints: { nullable: false } }
+              - column: { name: skipped_count, type: int, defaultValueNumeric: 0, constraints: { nullable: false } }
+              - column: { name: warning_count, type: int, defaultValueNumeric: 0, constraints: { nullable: false } }
+        - createIndex:
+            tableName: jobs
+            indexName: idx_jobs_account_created
+            columns:
+              - column: { name: account_id }
+              - column: { name: created_at }
+
+        - createTable:
+            tableName: job_issues
+            columns:
+              - column: { name: id, type: uuid, constraints: { primaryKey: true, nullable: false } }
+              - column: { name: job_id, type: uuid, constraints: { nullable: false } }
+              - column: { name: severity, type: varchar(20), constraints: { nullable: false } }
+              - column: { name: code, type: varchar(80), constraints: { nullable: false } }
+              - column: { name: record_ref, type: varchar(80), constraints: { nullable: false } }
+              - column: { name: detail, type: varchar(500) }
+              - column: { name: ordinal, type: int, constraints: { nullable: false } }
+        - addForeignKeyConstraint:
+            baseTableName: job_issues
+            baseColumnNames: job_id
+            referencedTableName: jobs
+            referencedColumnNames: id
+            constraintName: fk_job_issues_job
+            onDelete: CASCADE
+        - createIndex:
+            tableName: job_issues
+            indexName: idx_job_issues_job
+            columns:
+              - column: { name: job_id }
+              - column: { name: ordinal }
+
+        - addColumn:
+            tableName: normalized_events
+            columns:
+              - column: { name: idempotency_key, type: varchar(64) }
+        - addUniqueConstraint:
+            tableName: normalized_events
+            columnNames: job_id, idempotency_key
+            constraintName: uq_normalized_events_job_key
+
+        - addColumn:
+            tableName: credit_ledger
+            columns:
+              - column: { name: operation_key, type: varchar(200) }
+        - addUniqueConstraint:
+            tableName: credit_ledger
+            columnNames: operation_key
+            constraintName: uq_credit_ledger_operation
+
+        # NOT VALID: não falha em bases antigas com saldo negativo legado, mas vale para toda escrita nova.
+        - sql:
+            sql: ALTER TABLE accounts ADD CONSTRAINT ck_accounts_credits_non_negative CHECK (credits_balance >= 0) NOT VALID

@@ -4,6 +4,17 @@ set -euo pipefail
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "$ROOT"
 
+# Código exigido para o link de login aparecer na tela: sem ele, quem tiver a URL pública
+# não consegue entrar como outra pessoa. Reaproveita o código salvo entre execuções.
+CODE_FILE="$ROOT/.demo-access-code"
+if [[ -z "${FILENORM_DEMO_ACCESS_CODE:-}" ]]; then
+  if [[ ! -s "$CODE_FILE" ]]; then
+    (umask 077 && head -c 18 /dev/urandom | base64 | tr -dc 'A-Za-z0-9' | head -c 16 > "$CODE_FILE")
+  fi
+  FILENORM_DEMO_ACCESS_CODE="$(cat "$CODE_FILE")"
+fi
+export FILENORM_DEMO_ACCESS_CODE
+
 echo "==> Empacotando API (Maven local)"
 (cd apps/api && mvn -q -DskipTests package)
 
@@ -35,5 +46,8 @@ else
   echo "Túnel ainda sem URL. Veja: docker compose -f docker-compose.free.yml logs -f tunnel"
 fi
 echo
-echo "Login: qualquer e-mail — magic link na tela (sem SMTP/Stripe/domínio)."
+echo "Login: informe o código de acesso da demo para o magic link aparecer na tela."
+echo "  Código: ${FILENORM_DEMO_ACCESS_CODE}  (entregue só a quem deve acessar)"
+echo "  Sem o código, o link vai apenas para o Mailpit local."
+echo "Não envie extratos reais para a demo."
 echo "Parar: docker compose -f docker-compose.free.yml down"

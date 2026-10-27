@@ -29,11 +29,23 @@ public class CreditLedgerEntry {
     @Column(name = "created_at", nullable = false)
     private Instant createdAt;
 
+    @Column(name = "operation_key", length = 200)
+    private String operationKey;
+
     protected CreditLedgerEntry() {
     }
 
-    public CreditLedgerEntry(UUID id, UUID accountId, long delta, String reason, UUID jobId, Instant createdAt) {
+    public CreditLedgerEntry(
+            UUID id,
+            UUID accountId,
+            long delta,
+            String reason,
+            UUID jobId,
+            String operationKey,
+            Instant createdAt
+    ) {
         this.id = id;
+        this.operationKey = operationKey;
         this.accountId = accountId;
         this.delta = delta;
         this.reason = reason;
@@ -63,5 +75,9 @@ public class CreditLedgerEntry {
 
     public Instant getCreatedAt() {
         return createdAt;
+    }
+
+    public String getOperationKey() {
+        return operationKey;
     }
 }

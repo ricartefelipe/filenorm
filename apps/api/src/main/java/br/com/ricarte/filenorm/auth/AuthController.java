@@ -7,6 +7,8 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
+import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
 import java.util.Map;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -35,8 +37,22 @@ public class AuthController {
         return authService.requestMagicLink(
                 request.email(),
                 request.name(),
-                PublicBaseUrl.resolve(httpRequest, properties)
+                PublicBaseUrl.resolve(httpRequest, properties),
+                revealMagicLink(request)
         );
+    }
+
+    /**
+     * Modo demo: devolver o link na resposta equivale a login sem e-mail, então só acontece com o
+     * código de acesso da demo. Origem (IP/loopback) não serve de prova: os cabeçalhos de proxy são
+     * aceitos (forward-headers-strategy) e poderiam ser forjados. Sem código, o link vai só por e-mail.
+     */
+    private boolean revealMagicLink(MagicLinkRequest request) {
+        String code = properties.auth().demoAccessCode();
+        return properties.auth().exposeMagicLink()
+                && code != null && !code.isBlank()
+                && request.accessCode() != null
+                && MessageDigest.isEqual(code.getBytes(StandardCharsets.UTF_8), request.accessCode().getBytes(StandardCharsets.UTF_8));
     }
 
     @PostMapping("/verify")
@@ -76,7 +92,7 @@ public class AuthController {
         return null;
     }
 
-    public record MagicLinkRequest(@NotBlank @Email String email, String name) {
+    public record MagicLinkRequest(@NotBlank @Email String email, String name, String accessCode) {
     }
 
     public record VerifyRequest(@NotBlank String token) {

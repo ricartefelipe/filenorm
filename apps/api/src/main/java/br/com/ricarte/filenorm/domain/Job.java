@@ -4,6 +4,7 @@ import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
+import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.UUID;
 
@@ -58,6 +59,45 @@ public class Job {
 
     @Column(name = "finished_at")
     private Instant finishedAt;
+
+    @Column(nullable = false)
+    private int attempts;
+
+    @Column(name = "lease_expires_at")
+    private Instant leaseExpiresAt;
+
+    @Column(name = "event_count", nullable = false)
+    private int eventCount;
+
+    @Column(name = "rejected_count", nullable = false)
+    private int rejectedCount;
+
+    @Column(name = "skipped_count", nullable = false)
+    private int skippedCount;
+
+    @Column(name = "warning_count", nullable = false)
+    private int warningCount;
+
+    @Column(name = "balance_status", length = 20)
+    private String balanceStatus;
+
+    @Column(name = "balance_source", length = 40)
+    private String balanceSource;
+
+    @Column(name = "balance_reason", length = 60)
+    private String balanceReason;
+
+    @Column(name = "opening_balance", precision = 18, scale = 2)
+    private BigDecimal openingBalance;
+
+    @Column(name = "closing_balance", precision = 18, scale = 2)
+    private BigDecimal closingBalance;
+
+    @Column(name = "computed_closing_balance", precision = 18, scale = 2)
+    private BigDecimal computedClosingBalance;
+
+    @Column(name = "balance_difference", precision = 18, scale = 2)
+    private BigDecimal balanceDifference;
 
     protected Job() {
     }
@@ -177,5 +217,86 @@ public class Job {
 
     public void setFinishedAt(Instant finishedAt) {
         this.finishedAt = finishedAt;
+    }
+
+    public int getAttempts() {
+        return attempts;
+    }
+
+    public Instant getLeaseExpiresAt() {
+        return leaseExpiresAt;
+    }
+
+    public void setLeaseExpiresAt(Instant leaseExpiresAt) {
+        this.leaseExpiresAt = leaseExpiresAt;
+    }
+
+    public int getEventCount() {
+        return eventCount;
+    }
+
+    public int getRejectedCount() {
+        return rejectedCount;
+    }
+
+    public int getSkippedCount() {
+        return skippedCount;
+    }
+
+    public int getWarningCount() {
+        return warningCount;
+    }
+
+    public void setCounts(int eventCount, int rejectedCount, int skippedCount, int warningCount) {
+        this.eventCount = eventCount;
+        this.rejectedCount = rejectedCount;
+        this.skippedCount = skippedCount;
+        this.warningCount = warningCount;
+    }
+
+    public String getBalanceStatus() {
+        return balanceStatus;
+    }
+
+    public String getBalanceSource() {
+        return balanceSource;
+    }
+
+    public String getBalanceReason() {
+        return balanceReason;
+    }
+
+    public BigDecimal getOpeningBalance() {
+        return openingBalance;
+    }
+
+    public BigDecimal getClosingBalance() {
+        return closingBalance;
+    }
+
+    public BigDecimal getComputedClosingBalance() {
+        return computedClosingBalance;
+    }
+
+    public BigDecimal getBalanceDifference() {
+        return balanceDifference;
+    }
+
+    public void setBalanceCheck(
+            String status,
+            String source,
+            String reason,
+            BigDecimal opening,
+            BigDecimal closing,
+            BigDecimal computedClosing,
+            BigDecimal difference
+    ) {
+        this.balanceStatus = status;
+        this.balanceSource = source;
+        this.balanceReason = reason;
+        this.openingBalance = opening;
+        this.closingBalance = closing;
+        this.computedClosingBalance = computedClosing;
+        this.balanceDifference = difference;
     }
 }

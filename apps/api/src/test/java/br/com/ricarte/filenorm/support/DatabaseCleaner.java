@@ -14,7 +14,7 @@ public class DatabaseCleaner {
 
     public void clean() {
         jdbcTemplate.execute("""
-                TRUNCATE TABLE normalized_events, jobs, credit_ledger, api_keys,
+                TRUNCATE TABLE job_issues, normalized_events, jobs, credit_ledger, api_keys,
                 login_tokens, sessions, accounts
                 CASCADE
                 """);

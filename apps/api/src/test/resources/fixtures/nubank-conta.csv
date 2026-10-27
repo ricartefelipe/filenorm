@@ -1,0 +1,5 @@
+Data,Valor,Identificador,Descrição
+10/07/2025,-42.50,id-1,"Padaria Pão, Centro"
+11/07/2025,1500.00,id-2,Salário
+12/07/2025,abc,id-3,Linha inválida
+12/07/2025,-42.50,id-4,"Padaria Pão, Centro"

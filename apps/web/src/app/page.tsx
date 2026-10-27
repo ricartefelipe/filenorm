@@ -23,6 +23,7 @@ export default function HomePage() {
   const [email, setEmail] = useState("");
   const [name, setName] = useState("");
   const [password, setPassword] = useState("");
+  const [accessCode, setAccessCode] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [sent, setSent] = useState(false);
@@ -41,7 +42,11 @@ export default function HomePage() {
     setSent(false);
     setDevLink(null);
     try {
-      const result = await requestMagicLink(email.trim(), name.trim() || email.trim());
+      const result = await requestMagicLink(
+        email.trim(),
+        name.trim() || email.trim(),
+        accessCode.trim() || undefined
+      );
       setSent(true);
       if (result.magicLink) {
         setDevLink(result.magicLink);
@@ -106,6 +111,16 @@ export default function HomePage() {
                 autoComplete="off"
               />
             </div>
+            <div className="field">
+              <label htmlFor="access-code">Código de acesso da demo (opcional)</label>
+              <input
+                id="access-code"
+                value={accessCode}
+                onChange={(e) => setAccessCode(e.target.value)}
+                placeholder="Só em ambiente de demonstração"
+                autoComplete="off"
+              />
+            </div>
             <button className="button" type="submit" disabled={loading}>
               {loading ? "Enviando..." : "Enviar link de acesso"}
             </button>
@@ -116,7 +131,7 @@ export default function HomePage() {
             ) : null}
             {devLink ? (
               <div className="highlight-key mono">
-                Dev: <a href={devLink}>{devLink}</a>
+                Demo: <a href={devLink}>{devLink}</a>
               </div>
             ) : null}
             {error ? <p className="error">{error}</p> : null}

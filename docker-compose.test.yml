@@ -1,0 +1,18 @@
+# Banco descartável para a suíte de testes da API (dados em tmpfs, nada persiste).
+# Uso: ./scripts/test-api.sh  (projeto compose isolado "filenorm-test")
+services:
+  postgres-test:
+    image: postgres:16-alpine@sha256:0cefaabd882e42bcb2a2f3dc56d3ce4770560ba62fd7f197f1a2e008fd5731ab
+    environment:
+      POSTGRES_DB: filenorm
+      POSTGRES_USER: filenorm
+      POSTGRES_PASSWORD: filenorm
+    ports:
+      - "5433:5432"
+    tmpfs:
+      - /var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U filenorm -d filenorm"]
+      interval: 2s
+      timeout: 3s
+      retries: 30

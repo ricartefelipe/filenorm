@@ -1,0 +1,3 @@
+# CNAB 240 é largura fixa (240 colunas preenchidas com espaço): espaço no fim da linha é dado, não erro.
+*.ret -whitespace
+*.rem -whitespace

@@ -4,6 +4,7 @@ import Link from "next/link";
 import type { ReactNode } from "react";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import { logout } from "@/lib/api";
 import { clearSession, loadSession } from "@/lib/session";
 
 export function AppShell({ children }: { children: ReactNode }) {
@@ -15,7 +16,11 @@ export function AppShell({ children }: { children: ReactNode }) {
     setEmail(session?.email ?? null);
   }, []);
 
-  function onLogout() {
+  async function onLogout() {
+    const session = loadSession();
+    if (session) {
+      await logout(session.sessionToken);
+    }
     clearSession();
     router.push("/");
   }

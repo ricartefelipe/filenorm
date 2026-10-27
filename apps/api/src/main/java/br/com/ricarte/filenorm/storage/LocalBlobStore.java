@@ -6,6 +6,9 @@ import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
+import java.time.Instant;
+import java.util.List;
+import java.util.stream.Stream;
 import org.springframework.stereotype.Component;
 
 @Component
@@ -44,6 +47,29 @@ public class LocalBlobStore implements BlobStore {
             Files.deleteIfExists(resolve(relativePath));
         } catch (IOException ex) {
             throw new IllegalStateException("blob_delete_failed", ex);
+        }
+    }
+
+    @Override
+    public List<String> listOlderThan(Instant cutoff) {
+        if (!Files.isDirectory(root)) {
+            return List.of();
+        }
+        try (Stream<Path> files = Files.walk(root)) {
+            return files.filter(Files::isRegularFile)
+                    .filter(path -> modifiedBefore(path, cutoff))
+                    .map(path -> root.relativize(path).toString().replace('\\', '/'))
+                    .toList();
+        } catch (IOException ex) {
+            throw new IllegalStateException("blob_list_failed", ex);
+        }
+    }
+
+    private static boolean modifiedBefore(Path path, Instant cutoff) {
+        try {
+            return Files.getLastModifiedTime(path).toInstant().isBefore(cutoff);
+        } catch (IOException ex) {
+            return false;
         }
     }
 
