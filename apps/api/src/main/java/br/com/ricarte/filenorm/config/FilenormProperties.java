@@ -1,6 +1,7 @@
 package br.com.ricarte.filenorm.config;
 
 import org.springframework.boot.context.properties.ConfigurationProperties;
+import org.springframework.boot.context.properties.bind.DefaultValue;
 
 @ConfigurationProperties(prefix = "filenorm")
 public record FilenormProperties(
@@ -13,7 +14,13 @@ public record FilenormProperties(
         Cors cors,
         Totalrecall totalrecall
 ) {
-    public record Worker(boolean enabled, long pollIntervalMs, int batchSize) {
+    public record Worker(
+            boolean enabled,
+            long pollIntervalMs,
+            int batchSize,
+            @DefaultValue("300") long leaseSeconds,
+            @DefaultValue("3") int maxAttempts
+    ) {
     }
 
     public record Auth(
@@ -23,7 +30,8 @@ public record FilenormProperties(
             int magicLinkTtlMinutes,
             int sessionTtlDays,
             boolean exposeMagicLink,
-            boolean trustForwardedHost
+            boolean trustForwardedHost,
+            @DefaultValue("") String demoAccessCode
     ) {
     }
 
@@ -37,7 +45,12 @@ public record FilenormProperties(
     ) {
     }
 
-    public record Jobs(long maxUploadBytes) {
+    public record Jobs(
+            long maxUploadBytes,
+            @DefaultValue("50000") int maxRecords,
+            @DefaultValue("100") int maxPdfPages,
+            @DefaultValue("0") int retentionDays
+    ) {
     }
 
     public record Storage(String path) {

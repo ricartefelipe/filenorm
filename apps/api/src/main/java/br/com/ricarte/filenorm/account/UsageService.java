@@ -1,5 +1,6 @@
 package br.com.ricarte.filenorm.account;
 
+import br.com.ricarte.filenorm.billing.BillingService;
 import br.com.ricarte.filenorm.domain.Account;
 import br.com.ricarte.filenorm.domain.AccountRepository;
 import br.com.ricarte.filenorm.domain.CreditLedgerEntry;
@@ -18,10 +19,16 @@ public class UsageService {
 
     private final AccountRepository accountRepository;
     private final CreditLedgerRepository creditLedgerRepository;
+    private final BillingService billingService;
 
-    public UsageService(AccountRepository accountRepository, CreditLedgerRepository creditLedgerRepository) {
+    public UsageService(
+            AccountRepository accountRepository,
+            CreditLedgerRepository creditLedgerRepository,
+            BillingService billingService
+    ) {
         this.accountRepository = accountRepository;
         this.creditLedgerRepository = creditLedgerRepository;
+        this.billingService = billingService;
     }
 
     @Transactional(readOnly = true)
@@ -33,6 +40,7 @@ public class UsageService {
 
         Map<String, Object> body = new LinkedHashMap<>();
         body.put("creditsBalance", account.getCreditsBalance());
+        body.put("stripeConfigured", billingService.stripeConfigured());
         body.put("recentLedger", recent.stream().map(entry -> {
             Map<String, Object> item = new LinkedHashMap<>();
             item.put("delta", entry.getDelta());

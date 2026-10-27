@@ -4,6 +4,7 @@ import java.util.Map;
 import java.util.UUID;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -40,5 +41,16 @@ public class JobController {
     @GetMapping("/{id}/events")
     public Map<String, Object> getEvents(@PathVariable UUID id) {
         return jobService.getEvents(id);
+    }
+
+    @GetMapping("/{id}/issues")
+    public Map<String, Object> getIssues(@PathVariable UUID id) {
+        return jobService.getIssues(id);
+    }
+
+    @DeleteMapping("/{id}")
+    public Map<String, Boolean> deleteJob(@PathVariable UUID id) {
+        jobService.deleteJob(id);
+        return Map.of("deleted", true);
     }
 }

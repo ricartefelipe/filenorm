@@ -33,7 +33,7 @@ function BillingInner() {
       .catch((err) => setError(err instanceof Error ? err.message : "erro"));
   }, [router]);
 
-  async function checkout(pack: "starter" | "pro") {
+  async function checkout(pack: "starter" | "growth") {
     const session = loadSession();
     if (!session) {
       return;
@@ -48,6 +48,7 @@ function BillingInner() {
         `${origin}/app/billing?ok=1`,
         `${origin}/app/billing?cancel=1`
       );
+      // Créditos só entram pelo webhook assinado do Stripe; o retorno do navegador apenas informa.
       window.location.href = result.url;
     } catch (err) {
       setError(err instanceof Error ? err.message : "checkout_error");
@@ -96,9 +97,9 @@ function BillingInner() {
             className="button"
             type="button"
             disabled={loadingAction}
-            onClick={() => checkout("pro")}
+            onClick={() => checkout("growth")}
           >
-            Pro — 50.000 créditos
+            Growth — 50.000 créditos
           </button>
         </div>
         {error ? <p className="error">{error}</p> : null}

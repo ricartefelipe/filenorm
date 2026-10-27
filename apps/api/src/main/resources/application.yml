@@ -50,6 +50,9 @@ filenorm:
     enabled: ${FILENORM_WORKER_ENABLED:true}
     poll-interval-ms: ${FILENORM_WORKER_POLL_MS:1000}
     batch-size: ${FILENORM_WORKER_BATCH:10}
+    # Tempo máximo de uma tentativa; após expirar, outro worker pode reassumir o job.
+    lease-seconds: ${FILENORM_WORKER_LEASE_SECONDS:300}
+    max-attempts: ${FILENORM_WORKER_MAX_ATTEMPTS:3}
   auth:
     app-base-url: ${FILENORM_APP_BASE_URL:http://localhost:3000}
     api-base-url: ${FILENORM_API_BASE_URL:http://localhost:8080}
@@ -57,6 +60,8 @@ filenorm:
     magic-link-ttl-minutes: 20
     session-ttl-days: 30
     expose-magic-link: ${FILENORM_EXPOSE_MAGIC_LINK:false}
+    # Com expose-magic-link, o link só volta na resposta para acesso local direto ou com este código.
+    demo-access-code: ${FILENORM_DEMO_ACCESS_CODE:}
     trust-forwarded-host: ${FILENORM_TRUST_FORWARDED_HOST:false}
   credits:
     signup-grant: 500
@@ -67,6 +72,10 @@ filenorm:
     pdf-min-cost: 2
   jobs:
     max-upload-bytes: 10485760
+    max-records: ${FILENORM_MAX_RECORDS:50000}
+    max-pdf-pages: ${FILENORM_MAX_PDF_PAGES:100}
+    # 0 = mantém jobs, eventos e arquivos originais indefinidamente.
+    retention-days: ${FILENORM_RETENTION_DAYS:0}
   storage:
     path: ${FILENORM_STORAGE_PATH:./data/uploads}
   billing:

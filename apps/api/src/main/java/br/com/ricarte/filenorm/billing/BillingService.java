@@ -75,7 +75,12 @@ public class BillingService {
     }
 
     public static long creditsForPack(String pack) {
-        return PACK_CREDITS.getOrDefault(pack, 0L);
+        return pack == null ? 0L : PACK_CREDITS.getOrDefault(pack, 0L);
+    }
+
+    public boolean stripeConfigured() {
+        String key = properties.billing().stripeApiKey();
+        return key != null && !key.isBlank();
     }
 
     private String priceFor(String pack) {

@@ -1,0 +1,11 @@
+# Exceções aceitas para o gate de imagens (Trivy). Cada uma expira e volta a quebrar o build.
+vulnerabilities:
+  - id: CVE-2026-47884
+    statement: >-
+      spring-webmvc XsltView. A API é só REST e não usa XsltView nem renderização de views.
+      Correção apenas no Spring Framework 7 (Spring Boot 4, major).
+    expired_at: 2027-01-31
+  - id: CVE-2026-47890
+    statement: >-
+      spring-webmvc SSE com view fragments; o projeto não usa SSE. Correção apenas no Spring Framework 7.
+    expired_at: 2027-01-31

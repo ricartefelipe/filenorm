@@ -5,8 +5,13 @@
 		reverse_proxy api:8080
 	}
 
-	handle /actuator/* {
+	handle /actuator/health* {
 		reverse_proxy api:8080
+	}
+
+	# Métricas e demais endpoints do actuator só pela rede interna (api:8080).
+	handle /actuator/* {
+		respond 404
 	}
 
 	handle /internal/* {

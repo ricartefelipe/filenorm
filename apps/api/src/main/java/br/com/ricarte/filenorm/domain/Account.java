@@ -101,4 +101,8 @@ public class Account {
     public void setExpiresAt(Instant expiresAt) {
         this.expiresAt = expiresAt;
     }
+
+    public boolean isActive(Instant now) {
+        return enabled && (expiresAt == null || expiresAt.isAfter(now));
+    }
 }
