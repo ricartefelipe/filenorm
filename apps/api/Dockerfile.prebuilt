@@ -1,6 +1,10 @@
 FROM eclipse-temurin:21-jre@sha256:227118764cccd3c3294617061aaa93a08309c63a395eefa83e6b35032992ea99
-# /usr/bin/pebble vem na imagem base (fora do dpkg), não é usado pela JVM e carrega CVEs da stdlib Go.
-RUN rm -f /usr/bin/pebble \
+# Correções de segurança publicadas para a base (ex.: libbrotli1) e remoção do pebble, binário fora do dpkg
+# que vem na imagem base, não é usado pela JVM e carrega CVEs da stdlib Go.
+RUN apt-get update \
+    && apt-get upgrade -y --no-install-recommends \
+    && rm -rf /var/lib/apt/lists/* \
+    && rm -f /usr/bin/pebble \
     && useradd --system --uid 10001 --home-dir /app filenorm \
     && mkdir -p /data/uploads \
     && chown -R filenorm /data
