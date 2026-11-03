@@ -16,12 +16,12 @@ import br.com.ricarte.filenorm.support.NoOpMailConfig;
 import br.com.ricarte.filenorm.support.PostgresIntegrationTest;
 import br.com.ricarte.filenorm.support.TestAccounts;
 import br.com.ricarte.filenorm.support.TestAccounts.TestAccount;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.databind.ObjectMapper;
 import java.util.UUID;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
-import org.springframework.boot.test.mock.mockito.SpyBean;
+import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
+import org.springframework.test.context.bean.override.mockito.MockitoSpyBean;
 import org.springframework.context.annotation.Import;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.dao.DataAccessResourceFailureException;
@@ -55,7 +55,7 @@ class JobFailureAfterEventsIntegrationTest extends PostgresIntegrationTest {
     @Autowired
     private JdbcTemplate jdbc;
 
-    @SpyBean
+    @MockitoSpyBean
     private CreditsService creditsService;
 
     @Test

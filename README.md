@@ -10,7 +10,7 @@ API de normalização de arquivos financeiros. Envie OFX, CNAB 240 (retorno de c
 
 ## Stack
 
-- Java 21, Spring Boot 3.5, PostgreSQL 16
+- Java 21, Spring Boot 4.0, PostgreSQL 16
 - Jobs assíncronos no Postgres (`SKIP LOCKED`, lease com expiração e limite de tentativas)
 - Painel em Next.js (chaves, créditos, jobs)
 - Cobrança pay-per-use via pacotes de créditos (Stripe; créditos só pelo webhook assinado)
