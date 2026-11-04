@@ -16,7 +16,9 @@ COPY --from=build --chown=node:node /app/public ./public
 COPY --from=build --chown=node:node /app/node_modules ./node_modules
 # O npm não é usado em execução: removê-lo tira da imagem as dependências dele (e seus CVEs).
 # Correções de segurança da base publicadas depois da imagem entram em cada build.
-RUN apk upgrade --no-cache && rm -rf /usr/local/lib/node_modules/npm /usr/local/bin/npm /usr/local/bin/npx /opt/yarn* /usr/local/bin/yarn /usr/local/bin/yarnpkg
+RUN apk upgrade --no-cache \
+  && rm -rf /usr/local/lib/node_modules/npm /usr/local/bin/npm /usr/local/bin/npx \
+    /opt/yarn* /usr/local/bin/yarn /usr/local/bin/yarnpkg
 USER node
 EXPOSE 3000
 CMD ["node", "node_modules/next/dist/bin/next", "start"]
