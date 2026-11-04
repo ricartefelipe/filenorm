@@ -48,9 +48,13 @@ docker buildx imagetools inspect eclipse-temurin:21-jre --format '{{.Manifest.Di
 
 Troque o digest no Dockerfile/Compose, rode `./scripts/test-api.sh`, `./scripts/smoke-e2e.sh` e o scan de imagens (abaixo). As actions do CI também estão fixadas por SHA, com a versão em comentário. Fixar digest torna o build reproduzível; não corrige CVEs, por isso o scan continua no CI.
 
+### Banco e proxy de produção
+
+Os Compose de produção e free constroem `deploy/images/postgres.Dockerfile` (`postgres:16-alpine` fixado por digest, sem o `gosu` da imagem oficial, que vinha compilado com um Go antigo: 1 crítico e 25 HIGH) e `deploy/images/caddy` (Caddy 2.11.7 compilado com Go 1.27 sobre Alpine atualizado; o `caddy:2.9-alpine` usado antes tinha 6 críticos e 80 HIGH). O banco inicia como `postgres` (uid 70), o mesmo dono do volume criado pela imagem oficial, então volumes existentes abrem sem migração; o Caddy mantém o layout da imagem oficial (`/etc/caddy`, `/data`, `/config`), e os certificados já emitidos continuam valendo. Mailpit `v1.33.0` e `cloudflared` `2026.10.7` passaram de `latest` para versão e digest. Para atualizar quem já tem a stack no ar: `docker compose -f docker-compose.prod.yml up -d --build postgres caddy`.
+
 ### Scan de imagens
 
-O CI constrói as imagens da API e do web e roda o Trivy (versão fixada por digest): qualquer HIGH/CRITICAL falha o build, exceto as exceções de `.trivyignore.yaml`, que têm justificativa e data de expiração. A imagem da API remove o `/usr/bin/pebble` da base (binário Go fora do dpkg, não usado pela JVM); a do web não leva npm/yarn e inicia o Next com `node`.
+O CI constrói as imagens da API, do web, do banco e do proxy, valida os dois Caddyfiles com o Caddy que vai para produção e roda o Trivy (versão fixada por digest): qualquer HIGH/CRITICAL falha o build, exceto as exceções de `.trivyignore.yaml`, que têm justificativa e data de expiração. A imagem da API remove o `/usr/bin/pebble` da base (binário Go fora do dpkg, não usado pela JVM); a do web não leva npm/yarn e inicia o Next com `node`.
 
 ## Backup e restauração
 
