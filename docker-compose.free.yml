@@ -1,6 +1,9 @@
 services:
   postgres:
-    image: postgres:16-alpine@sha256:0cefaabd882e42bcb2a2f3dc56d3ce4770560ba62fd7f197f1a2e008fd5731ab
+    build:
+      context: ./deploy/images
+      dockerfile: postgres.Dockerfile
+    image: filenorm-postgres:16
     environment:
       POSTGRES_DB: filenorm
       POSTGRES_USER: filenorm
@@ -14,13 +17,16 @@ services:
       retries: 10
 
   mailpit:
-    image: axllent/mailpit:latest@sha256:0790692be935ea4420d085694f7985b1f692ca6a8771ab0e0bd8ba75ac180498
+    image: axllent/mailpit:v1.33.0@sha256:9b3a463be15354c0f0eba91697d80e3e0d8a5623ef0e627cacc836bc17fd5231
     ports:
       - "18026:8025"
 
   # Volumes criados por versões que rodavam como root: ajusta o dono para o usuário da API (uid 10001).
   uploads-permissions:
-    image: postgres:16-alpine@sha256:0cefaabd882e42bcb2a2f3dc56d3ce4770560ba62fd7f197f1a2e008fd5731ab
+    build:
+      context: ./deploy/images
+      dockerfile: postgres.Dockerfile
+    image: filenorm-postgres:16
     user: "0"
     entrypoint: ["chown", "-R", "10001", "/data/uploads"]
     volumes:
@@ -68,7 +74,9 @@ services:
       - api
 
   caddy:
-    image: caddy:2.9-alpine@sha256:b4e3952384eb9524a887633ce65c752dd7c71314d2c2acf98cd5c715aaa534f0
+    build:
+      context: ./deploy/images/caddy
+    image: filenorm-caddy:2.11
     ports:
       - "9081:80"
     volumes:
@@ -78,7 +86,7 @@ services:
       - web
 
   tunnel:
-    image: cloudflare/cloudflared:latest@sha256:c6c7ae1d5dfdcb094ad344ed68ccffc26635c9c6be80965664c33baf064b0515
+    image: cloudflare/cloudflared:2026.10.7@sha256:4955524aeaa379e154023d5a027c250f7b35041a2e7e950cf13f144bc9b9c5ba
     command: tunnel --no-autoupdate --url http://caddy:80
     depends_on:
       - caddy

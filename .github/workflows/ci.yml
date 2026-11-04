@@ -73,10 +73,15 @@ jobs:
         run: mvn -B -DskipTests package
       - name: Jornada integrada + backup/restore (Compose)
         run: ./scripts/smoke-e2e.sh
-      - name: Scan das imagens (HIGH/CRITICAL bloqueia; exceções em .trivyignore.yaml)
+      - name: Caddyfiles válidos e scan das imagens (HIGH/CRITICAL bloqueia; exceções em .trivyignore.yaml)
         run: |
           docker build -t filenorm-web:e2e apps/web
-          for image in filenorm-api:e2e filenorm-web:e2e; do
+          docker build -t filenorm-postgres:ci -f deploy/images/postgres.Dockerfile deploy/images
+          docker build -t filenorm-caddy:ci deploy/images/caddy
+          for f in Caddyfile Caddyfile.free; do
+            docker run --rm -e FILENORM_DOMAIN=ci.invalid -v "$PWD/deploy/$f:/etc/caddy/Caddyfile:ro" filenorm-caddy:ci caddy validate --config /etc/caddy/Caddyfile --adapter caddyfile
+          done
+          for image in filenorm-api:e2e filenorm-web:e2e filenorm-postgres:ci filenorm-caddy:ci; do
             docker run --rm -v /var/run/docker.sock:/var/run/docker.sock -v "$PWD/.trivyignore.yaml:/trivyignore.yaml:ro" \
               aquasec/trivy:0.69.3@sha256:bcc376de8d77cfe086a917230e818dc9f8528e3c852f7b1aff648949b6258d1c image --scanners vuln --severity HIGH,CRITICAL \
               --ignorefile /trivyignore.yaml --exit-code 1 "$image"
