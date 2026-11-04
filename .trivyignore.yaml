@@ -9,9 +9,3 @@ vulnerabilities:
     statement: >-
       spring-webmvc SSE com view fragments; o projeto não usa SSE. Correção apenas no Spring Framework 7.
     expired_at: 2027-01-31
-  - id: CVE-2026-116587
-    purls:
-      - pkg:golang/github.com/go-jose/go-jose/v3@v3.0.5
-    statement: >-
-      go-jose v3 3.0.5 (DoS com parâmetros RSA malformados em JWK), dependência do módulo de PKI interna do Caddy (caddypki → smallstep/certificates). Os Caddyfiles usam ACME público e não habilitam a PKI interna nem o servidor ACME, onde um JWK de terceiros seria lido. Não há versão corrigida na linha v3; sai quando o Caddy migrar a dependência. Aceitar é decisão do proprietário.
-    expired_at: 2027-02-04
